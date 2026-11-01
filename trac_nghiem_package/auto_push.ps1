@@ -1,10 +1,3 @@
-<#
-.SYNOPSIS
-    auto_push.ps1 - Kịch bản PowerShell tự động Commit & Push lên GitHub.
-.EXAMPLE
-    .\auto_push.ps1 -Message "Cập nhật đề thi mới"
-    .\auto_push.ps1 -Token "ghp_xxxx" -SaveToken
-#>
 param(
     [string]$Message = "",
     [string]$Token = "",
@@ -15,23 +8,23 @@ param(
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# 1. Tìm Git
+# 1. Tim Git
 $gitCmd = Get-Command git.exe -ErrorAction SilentlyContinue
 if ($null -eq $gitCmd) {
     $knownGit = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\Git\cmd\git.exe"
     if (Test-Path $knownGit) {
         $gitExe = $knownGit
     } else {
-        Write-Error "Không tìm thấy git.exe trên máy tính!"
+        Write-Error "Khong tim thay git.exe tren he thong!"
         exit 1
     }
 } else {
     $gitExe = $gitCmd.Source
 }
 
-Write-Host "🔧 Sử dụng Git: $gitExe" -ForegroundColor Cyan
+Write-Host "Su dung Git: $gitExe" -ForegroundColor Cyan
 
-# 2. Đọc Token nếu có
+# 2. Doc Token neu co
 $activeToken = $Token
 if ([string]::IsNullOrWhiteSpace($activeToken)) {
     if (![string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
@@ -49,7 +42,7 @@ if ([string]::IsNullOrWhiteSpace($activeToken)) {
 }
 
 if ($SaveToken -and (![string]::IsNullOrWhiteSpace($Token))) {
-    Set-Content -Path "$scriptDir\.env" -Value "# File luu tru GitHub Token tu dong`nGITHUB_TOKEN=$Token" -Encoding UTF8
+    Set-Content -Path "$scriptDir\.env" -Value "# GitHub Token`nGITHUB_TOKEN=$Token" -Encoding UTF8
     if (Test-Path "$scriptDir\.gitignore") {
         $gitIgnore = Get-Content "$scriptDir\.gitignore"
         if ($gitIgnore -notcontains ".env") {
@@ -58,31 +51,31 @@ if ($SaveToken -and (![string]::IsNullOrWhiteSpace($Token))) {
     } else {
         Set-Content "$scriptDir\.gitignore" ".env`n.github_token" -Encoding UTF8
     }
-    Write-Host "💾 Đã lưu token vào file .env an toàn!" -ForegroundColor Green
+    Write-Host "Da luu token vao file .env an toan!" -ForegroundColor Green
 }
 
-# 3. Kiểm tra thay đổi
+# 3. Kiem tra thay doi
 Push-Location $scriptDir
 try {
     $status = & $gitExe status --porcelain
     if (![string]::IsNullOrWhiteSpace($status)) {
-        Write-Host "📦 Phát hiện thay đổi. Đang thêm file và commit..." -ForegroundColor Yellow
+        Write-Host "Phat hien thay doi. Dang them file va commit..." -ForegroundColor Yellow
         & $gitExe add .
         if ([string]::IsNullOrWhiteSpace($Message)) {
             $Message = "Cap nhat tu dong: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
         }
         & $gitExe commit -m $Message
     } else {
-        Write-Host "ℹ️ Không có thay đổi cục bộ chưa commit." -ForegroundColor Gray
+        Write-Host "Khong co thay doi cuc bo chua commit." -ForegroundColor Gray
     }
 
-    # 4. Lấy Remote URL
+    # 4. Lay Remote URL
     $remoteUrl = (& $gitExe remote get-url $Remote).Trim()
-    Write-Host "🌐 Remote: $remoteUrl" -ForegroundColor Cyan
+    Write-Host "Remote: $remoteUrl" -ForegroundColor Cyan
 
     $pushTarget = $Remote
     if (![string]::IsNullOrWhiteSpace($activeToken)) {
-        Write-Host "🔑 Sử dụng GitHub Token để đẩy tự động..." -ForegroundColor Green
+        Write-Host "Su dung GitHub Token de day tu dong..." -ForegroundColor Green
         if ($remoteUrl -match "^https://(.+)$") {
             $cleanUrl = $matches[1]
             if ($cleanUrl.Contains("@")) {
@@ -93,20 +86,20 @@ try {
     }
 
     # 5. Push
-    Write-Host "🚀 Đang đẩy lên nhánh '$Branch'..." -ForegroundColor Yellow
+    Write-Host "Dang day len nhanh '$Branch'..." -ForegroundColor Yellow
     $env:GIT_TERMINAL_PROMPT = "0"
     $env:GCM_INTERACTIVE = "never"
     & $gitExe push $pushTarget $Branch
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "`n==================================================" -ForegroundColor Green
-        Write-Host "✅ ĐẨY LÊN GITHUB THÀNH CÔNG RỰC RỠ!" -ForegroundColor Green
-        Write-Host "🌿 Nhánh: $Branch" -ForegroundColor Green
+        Write-Host "DAY LEN GITHUB THANH CONG RUC RO!" -ForegroundColor Green
+        Write-Host "Nhanh: $Branch" -ForegroundColor Green
         Write-Host "==================================================`n" -ForegroundColor Green
     } else {
-        Write-Host "`n❌ Đẩy lên thất bại. Hãy kiểm tra quyền hoặc cung cấp Token:" -ForegroundColor Red
-        Write-Host "👉 Tạo Token tại: https://github.com/settings/tokens/new?scopes=repo&description=QuizAppAutoPush" -ForegroundColor Yellow
-        Write-Host "👉 Sau đó chạy: .\auto_push.ps1 -Token <TOKEN> -SaveToken" -ForegroundColor Yellow
+        Write-Host "`nDay len that bai. Can Token de day tu dong:" -ForegroundColor Red
+        Write-Host "1. Tao Token tai: https://github.com/settings/tokens (chon quyen 'repo')" -ForegroundColor Yellow
+        Write-Host "2. Chay lenh: .\auto_push.ps1 -Token <TOKEN> -SaveToken" -ForegroundColor Yellow
     }
 } finally {
     Pop-Location
