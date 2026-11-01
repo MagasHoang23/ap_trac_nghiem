@@ -266,9 +266,24 @@
                     </h2>
                     <p class="text-xs text-gray-500 mt-0.5">Biên dịch tự động: in đậm, in nghiêng, cỡ chữ, thụt lề, danh sách, công thức và trích dẫn.</p>
                 </div>
-                <button id="load-sample-template-btn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-2 rounded-lg border border-indigo-200 transition-colors flex items-center justify-center gap-1.5 shrink-0">
-                    <span>📋 Dán đề mẫu phong phú</span>
-                </button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="copy-ai-prompt-btn" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold px-3 py-2 rounded-lg border border-emerald-300 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Bấm để sao chép Prompt chuẩn dán vào ChatGPT / Claude / Gemini">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span id="copy-ai-prompt-text">🤖 Sao chép Prompt gửi AI</span>
+                    </button>
+                    <button id="load-sample-template-btn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-2 rounded-lg border border-indigo-200 transition-colors flex items-center justify-center gap-1.5">
+                        <span>📋 Dán đề mẫu phong phú</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast thông báo sao chép prompt -->
+            <div id="copy-prompt-toast" class="hidden mb-3 p-2.5 bg-emerald-50 text-emerald-800 text-xs rounded-lg border border-emerald-300 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-emerald-600 font-bold text-sm">✓</span>
+                    <span><strong>Đã sao chép Prompt mẫu!</strong> Bạn chỉ cần mở ChatGPT, Claude hoặc Gemini, dán (Ctrl+V) vào và yêu cầu tạo đề. AI sẽ xuất trong khối code block chuẩn định dạng.</span>
+                </div>
+                <button type="button" onclick="document.getElementById('copy-prompt-toast').classList.add('hidden')" class="text-emerald-700 hover:text-emerald-900 font-bold ml-2">✕</button>
             </div>
 
             <!-- Bảng tra cứu kí tự đặc biệt -->
@@ -1278,6 +1293,85 @@
         const modalPreviewView = document.getElementById('modal-preview-view');
         const modalPreviewContent = document.getElementById('modal-preview-content');
         const loadSampleTemplateBtn = document.getElementById('load-sample-template-btn');
+        const copyAiPromptBtn = document.getElementById('copy-ai-prompt-btn');
+        const copyAiPromptText = document.getElementById('copy-ai-prompt-text');
+        const copyPromptToast = document.getElementById('copy-prompt-toast');
+
+        // PROMPT MẪU CHUẨN GỬI CHO AI (ChatGPT, Claude, Gemini, DeepSeek...)
+        const aiPromptTemplate = `Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
+
+⚠️ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
+1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick \`\`\`text ... \`\`\`) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT VÀ KHÔNG BỊ TRÌNH DUYỆT TỰ ĐỘNG THAY ĐỔI ĐỊNH DẠNG. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
+
+2. Cấu trúc mỗi câu hỏi gồm:
+   - Dòng tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, *in nghiêng*, \`code\`, [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh]).
+   - Các phương án: A., B., C., D. ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: B. Đáp án này đúng*).
+   - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
+
+3. Quy chuẩn trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
+   - Tiêu đề mục: Dùng # Tiêu đề lớn, ## Tiêu đề vừa, ### Tiêu đề nhỏ.
+   - Từ khóa cốt lõi: Dùng **in đậm**.
+   - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng (Hệ thống sẽ tự tạo vạch phân cấp thụt lề).
+   - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
+   - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận (Ví dụ: -> Do đó đáp án B đúng).
+   - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
+   - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
+
+MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
+\`\`\`text
+Câu 1: Cho các nhận định sau về **Quang hợp ở thực vật**:
+1. Diễn ra chủ yếu ở bào quan lục lạp.
+2. Sản phẩm tạo ra gồm Glucose và khí O2.
+Hỏi có bao nhiêu nhận định **[do]ĐÚNG[/do]**?
+A. 0
+B. 1
+C. 2*
+D. 3
+
+Giải thích:
+# Phân tích chi tiết từng nhận định:
+- Nhận định 1: **ĐÚNG**. Lục lạp chứa chất diệp lục hấp thụ năng lượng ánh sáng mặt trời.
+- Nhận định 2: **ĐÚNG**. Phương trình tổng quát:
+  * 6CO2 + 6H2O -> C6H12O6 + 6O2
+> ==Kết luận:== Cả 2 nhận định đều chính xác.
+-> Do đó, đáp án đúng là **C**.
+\`\`\`
+
+Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block \`\`\`text ... \`\`\` duy nhất:`;
+
+        if (copyAiPromptBtn) {
+            copyAiPromptBtn.addEventListener('click', () => {
+                function onCopySuccess() {
+                    if (copyAiPromptText) copyAiPromptText.textContent = '✅ Đã sao chép Prompt!';
+                    if (copyPromptToast) copyPromptToast.classList.remove('hidden');
+                    setTimeout(() => {
+                        if (copyAiPromptText) copyAiPromptText.textContent = '🤖 Sao chép Prompt gửi AI';
+                    }, 3500);
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(aiPromptTemplate).then(onCopySuccess).catch(fallbackCopy);
+                } else {
+                    fallbackCopy();
+                }
+
+                function fallbackCopy() {
+                    const ta = document.createElement('textarea');
+                    ta.value = aiPromptTemplate;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try {
+                        document.execCommand('copy');
+                        onCopySuccess();
+                    } catch (e) {
+                        alert('Không thể tự động sao chép. Vui lòng cấp quyền truy cập Clipboard.');
+                    }
+                    document.body.removeChild(ta);
+                }
+            });
+        }
 
         function switchModalTab(tab) {
             if (tab === 'edit') {
