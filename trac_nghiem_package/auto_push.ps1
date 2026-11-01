@@ -95,6 +95,7 @@ try {
     # 5. Push
     Write-Host "🚀 Đang đẩy lên nhánh '$Branch'..." -ForegroundColor Yellow
     $env:GIT_TERMINAL_PROMPT = "0"
+    $env:GCM_INTERACTIVE = "never"
     & $gitExe push $pushTarget $Branch
 
     if ($LASTEXITCODE -eq 0) {

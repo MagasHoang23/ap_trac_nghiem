@@ -179,6 +179,7 @@ def auto_push(commit_msg=None, token=None, branch="main", remote="origin", proje
     print(f"🚀 Đang đẩy lên nhánh '{branch}'...")
     env_copy = os.environ.copy()
     env_copy["GIT_TERMINAL_PROMPT"] = "0"
+    env_copy["GCM_INTERACTIVE"] = "never"
 
     try:
         push_res = subprocess.run(
