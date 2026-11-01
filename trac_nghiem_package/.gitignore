@@ -1,0 +1,13 @@
+# Biến môi trường và Token bảo mật (KHÔNG BAO GIỜ COMMIT LÊN GITHUB)
+.env
+.github_token
+*.token
+
+# Ảnh chụp màn hình tạm
+Vi_tri_github.png
+
+# Thư mục tạm của hệ điều hành và IDE
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
