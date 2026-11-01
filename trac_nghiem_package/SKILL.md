@@ -114,3 +114,4 @@ Giải thích:
    * `saveCurrentState` / `loadAttemptForReview`: Bộ nhớ lưu trữ tiến trình và xem lại bài thi.
 3. **Kiểm thử trước khi push**:
    * Chạy `node -e "eval(require('fs').readFileSync('index.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1])"` để xác nhận mã JavaScript không có lỗi cú pháp.
+
