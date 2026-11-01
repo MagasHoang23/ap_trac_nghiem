@@ -360,54 +360,70 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Biên dịch các thẻ định dạng inline (in đậm, in nghiêng, cỡ chữ, màu sắc, code, highlight)
+                // Biên dịch các thẻ định dạng inline (in đậm, in nghiêng, cỡ chữ, màu sắc, code, highlight)
         function renderInlineRichText(escapedText) {
             if (!escapedText) return '';
             let s = escapedText;
 
-            // 1. Monospace / Code: `code`
+            // 0. Tự động loại bỏ các thẻ trích dẫn tài liệu do AI sinh ra (như [cite: 1], [citation: 1], [source: 1])
+            s = s.replace(/\[cite:\s*[^\]]+\]/gi, '');
+            s = s.replace(/\[citation:\s*[^\]]+\]/gi, '');
+            s = s.replace(/\[source:\s*[^\]]+\]/gi, '');
+            s = s.replace(/\[ref:\s*[^\]]+\]/gi, '');
+
+            // 1. Bảo vệ chỗ trống điền từ (fill-in-the-blank) như: __, ___, ____, _____
+            // Tuyệt đối không để dấu gạch dưới bị hiểu nhầm thành in đậm hoặc in nghiêng
+            const blanks = [];
+            s = s.replace(/_{2,}/g, () => {
+                const idx = blanks.length;
+                blanks.push('<span class="inline-block border-b-2 border-slate-700 min-w-[32px] mx-1 text-center font-mono font-bold text-slate-700 select-all tracking-wider">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+                return `@@BLANK_${idx}@@`;
+            });
+
+            // 2. Monospace / Code: `code`
             s = s.replace(/`([^`]+)`/g, '<code class="font-mono text-[0.88em] bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded border border-slate-200 select-all">$1</code>');
 
-            // 2. In đậm: **text**, __text__, [b]text[/b], &lt;b&gt;, &lt;strong&gt;
+            // 3. In đậm: CHỈ dùng **text**, [b]text[/b], &lt;b&gt;, &lt;strong&gt; (Đã loại bỏ __text__ để tránh lỗi nuốt chỗ trống)
             s = s.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>');
-            s = s.replace(/__([^_]+)__/g, '<strong class="font-bold text-slate-900">$1</strong>');
             s = s.replace(/\[b\](.*?)\[\/b\]/gi, '<strong class="font-bold text-slate-900">$1</strong>');
             s = s.replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/gi, '<strong class="font-bold text-slate-900">$1</strong>');
             s = s.replace(/&lt;strong&gt;(.*?)&lt;\/strong&gt;/gi, '<strong class="font-bold text-slate-900">$1</strong>');
 
-            // 3. In nghiêng: *text*, _text_, [i]text[/i], &lt;i&gt;, &lt;em&gt;
+            // 4. In nghiêng: CHỈ dùng *text*, [i]text[/i], &lt;i&gt;, &lt;em&gt; (Đã loại bỏ _text_ để tránh xung đột)
             s = s.replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1<em class="italic text-slate-800">$2</em>$3');
-            s = s.replace(/(^|[^_])_([^_]+)_([^_]|$)/g, '$1<em class="italic text-slate-800">$2</em>$3');
             s = s.replace(/\[i\](.*?)\[\/i\]/gi, '<em class="italic text-slate-800">$1</em>');
             s = s.replace(/&lt;i&gt;(.*?)&lt;\/i&gt;/gi, '<em class="italic text-slate-800">$1</em>');
             s = s.replace(/&lt;em&gt;(.*?)&lt;\/em&gt;/gi, '<em class="italic text-slate-800">$1</em>');
 
-            // 4. Highlight: ==text==, [hl]text[/hl]
+            // 5. Highlight: ==text==, [hl]text[/hl]
             s = s.replace(/==([^=]+)==/g, '<mark class="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-medium border border-amber-200/70">$1</mark>');
             s = s.replace(/\[hl\](.*?)\[\/hl\]/gi, '<mark class="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-medium border border-amber-200/70">$1</mark>');
 
-            // 5. Gạch chân: [u]text[/u], &lt;u&gt;
+            // 6. Gạch chân: [u]text[/u], &lt;u&gt;
             s = s.replace(/\[u\](.*?)\[\/u\]/gi, '<span class="underline underline-offset-2">$1</span>');
             s = s.replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/gi, '<span class="underline underline-offset-2">$1</span>');
 
-            // 6. Gạch ngang: ~~text~~, [del]text[/del]
+            // 7. Gạch ngang: ~~text~~, [del]text[/del]
             s = s.replace(/~~([^~]+)~~/g, '<span class="line-through text-slate-400">$1</span>');
             s = s.replace(/\[del\](.*?)\[\/del\]/gi, '<span class="line-through text-slate-400">$1</span>');
 
-            // 7. Cỡ chữ tùy chỉnh: [to], [rat-to], [nho]
+            // 8. Cỡ chữ tùy chỉnh: [to], [rat-to], [nho]
             s = s.replace(/\[(?:to|lg|size=lg)\](.*?)\[\/(?:to|lg|size=lg)\]/gi, '<span class="text-[1.12em] font-semibold text-slate-800">$1</span>');
             s = s.replace(/\[(?:rat-to|xl|size=xl)\](.*?)\[\/(?:rat-to|xl|size=xl)\]/gi, '<span class="text-[1.28em] font-bold text-slate-900">$1</span>');
             s = s.replace(/\[(?:nho|sm|size=sm)\](.*?)\[\/(?:nho|sm|size=sm)\]/gi, '<span class="text-[0.85em] text-slate-500">$1</span>');
 
-            // 8. Màu sắc: [do], [xanh], [lam], [cam], [tim]
+            // 9. Màu sắc: [do], [xanh], [lam], [cam], [tim]
             s = s.replace(/\[(?:do|red)\](.*?)\[\/(?:do|red)\]/gi, '<span class="text-red-600 font-semibold">$1</span>');
             s = s.replace(/\[(?:xanh|green)\](.*?)\[\/(?:xanh|green)\]/gi, '<span class="text-emerald-600 font-semibold">$1</span>');
             s = s.replace(/\[(?:lam|blue)\](.*?)\[\/(?:lam|blue)\]/gi, '<span class="text-blue-600 font-semibold">$1</span>');
             s = s.replace(/\[(?:cam|orange)\](.*?)\[\/(?:cam|orange)\]/gi, '<span class="text-amber-600 font-semibold">$1</span>');
             s = s.replace(/\[(?:tim|purple)\](.*?)\[\/(?:tim|purple)\]/gi, '<span class="text-purple-600 font-semibold">$1</span>');
 
-            // 9. Thụt lề nội tuyến: [tab], [indent]
+            // 10. Thụt lề nội tuyến: [tab], [indent]
             s = s.replace(/\[(?:tab|indent|thut)\](.*?)\[\/(?:tab|indent|thut)\]/gi, '<span class="inline-block pl-5">$1</span>');
+
+            // 11. Khôi phục lại các chỗ trống điền từ (fill-in-the-blank)
+            s = s.replace(/@@BLANK_(\d+)@@/g, (m, idx) => blanks[idx]);
 
             return s;
         }
@@ -595,7 +611,13 @@
         // --- HÀM PHÂN TÍCH VÀ BIÊN DỊCH DỮ LIỆU ĐỀ THI MỚI (NÂNG CẤP TOÀN DIỆN) ---
         function parseNewQuizData(textInput) {
             const newQuestions = [];
-            const lines = textInput.replace(/\r\n/g, '\n').split('\n');
+            // Dọn dẹp rác trích dẫn do AI sinh ra (như [cite: 1], [citation: 1], [source: 1])
+            const sanitizedInput = textInput
+                .replace(/\[cite:\s*[^\]]+\]/gi, '')
+                .replace(/\[citation:\s*[^\]]+\]/gi, '')
+                .replace(/\[source:\s*[^\]]+\]/gi, '')
+                .replace(/\[ref:\s*[^\]]+\]/gi, '');
+            const lines = sanitizedInput.replace(/\r\n/g, '\n').split('\n');
             let currentQuestionObj = null;
             let questionCounter = 0;
             let state = 'NONE'; // 'NONE' | 'QUESTION' | 'OPTION' | 'SPECIFIC_EXPL' | 'GENERAL_EXPL'
@@ -1301,17 +1323,25 @@
         const aiPromptTemplate = `Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
 
 ⚠️ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
-1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick \`\`\`text ... \`\`\`) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT VÀ KHÔNG BỊ TRÌNH DUYỆT TỰ ĐỘNG THAY ĐỔI ĐỊNH DẠNG. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
+1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick \`\`\`text ... \`\`\`) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
 
-2. Cấu trúc mỗi câu hỏi gồm:
-   - Dòng tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, *in nghiêng*, \`code\`, [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh]).
+2. CẤM TRÍCH DẪN RÁC: TUYỆT ĐỐI KHÔNG chèn các thẻ trích dẫn tài liệu như [cite: 1], [citation: 1], [source: 1], [1] vào trong đề bài hay phần giải thích.
+
+3. QUY TẮC CHỖ TRỐNG ĐIỀN TỪ: Với các câu hỏi điền từ vào chỗ trống, hãy dùng 4 hoặc 5 dấu gạch dưới (Ví dụ: "Men make _____ house and women make _____ home").
+
+4. QUY TẮC IN ĐẬM VÀ IN NGHIÊNG:
+   - Để in đậm: CHỈ DÙNG **từ khóa** (KHÔNG dùng 2 dấu gạch dưới __ để tránh lỗi nuốt chỗ trống điền từ).
+   - Để in nghiêng: CHỈ DÙNG *từ khóa*.
+
+5. Cấu trúc mỗi câu hỏi gồm:
+   - Tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, *in nghiêng*, \`code\`, [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh]).
    - Các phương án: A., B., C., D. ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: B. Đáp án này đúng*).
    - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
 
-3. Quy chuẩn trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
+6. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
    - Tiêu đề mục: Dùng # Tiêu đề lớn, ## Tiêu đề vừa, ### Tiêu đề nhỏ.
    - Từ khóa cốt lõi: Dùng **in đậm**.
-   - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng (Hệ thống sẽ tự tạo vạch phân cấp thụt lề).
+   - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng.
    - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
    - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận (Ví dụ: -> Do đó đáp án B đúng).
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
@@ -1319,22 +1349,19 @@
 
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 \`\`\`text
-Câu 1: Cho các nhận định sau về **Quang hợp ở thực vật**:
-1. Diễn ra chủ yếu ở bào quan lục lạp.
-2. Sản phẩm tạo ra gồm Glucose và khí O2.
-Hỏi có bao nhiêu nhận định **[do]ĐÚNG[/do]**?
-A. 0
-B. 1
-C. 2*
-D. 3
+Câu 1: It is generally believed that "Men make _____ house and women make _____ home".
+A. a / a*
+B. the / the
+C. a / the
+D. the / an
 
 Giải thích:
-# Phân tích chi tiết từng nhận định:
-- Nhận định 1: **ĐÚNG**. Lục lạp chứa chất diệp lục hấp thụ năng lượng ánh sáng mặt trời.
-- Nhận định 2: **ĐÚNG**. Phương trình tổng quát:
-  * 6CO2 + 6H2O -> C6H12O6 + 6O2
-> ==Kết luận:== Cả 2 nhận định đều chính xác.
--> Do đó, đáp án đúng là **C**.
+# Phân tích ngữ pháp & Thành ngữ:
+- Thành ngữ chuẩn tiếng Anh: **"Men make a house and women make a home"** (Đàn ông xây nhà, đàn bà xây tổ ấm).
+- Cả **house** và **home** đều là danh từ đếm được số ít mang nghĩa biểu trưng tổng quát:
+  * Nên sử dụng mạo từ bất định **a**.
+> ==Ghi nhớ:== Cụm *make a house & make a home* là cặp quán ngữ luôn đi cùng nhau.
+-> Do đó, đáp án đúng là **A**.
 \`\`\`
 
 Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block \`\`\`text ... \`\`\` duy nhất:`;

@@ -90,17 +90,25 @@ Trong modal "Thiết lập đề thi", người dùng có sẵn nút **🤖 Sao 
 Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
 
 ⚠️ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
-1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick ```text ... ```) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT VÀ KHÔNG BỊ TRÌNH DUYỆT TỰ ĐỘNG THAY ĐỔI ĐỊNH DẠNG. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
+1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick ```text ... ```) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
 
-2. Cấu trúc mỗi câu hỏi gồm:
+2. CẤM TRÍCH DẪN RÁC: TUYỆT ĐỐI KHÔNG chèn các thẻ trích dẫn tài liệu như [cite: 1], [citation: 1], [source: 1], [1] vào trong đề bài hay phần giải thích.
+
+3. QUY TẮC CHỖ TRỐNG ĐIỀN TỪ: Với các câu hỏi điền từ vào chỗ trống, hãy dùng 4 hoặc 5 dấu gạch dưới (Ví dụ: "Men make _____ house and women make _____ home").
+
+4. QUY TẮC IN ĐẬM VÀ IN NGHIÊNG:
+   - Để in đậm: CHỈ DÙNG **từ khóa** (KHÔNG dùng 2 dấu gạch dưới __ để tránh lỗi nuốt chỗ trống điền từ).
+   - Để in nghiêng: CHỈ DÙNG *từ khóa*.
+
+5. Cấu trúc mỗi câu hỏi gồm:
    - Dòng tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, *in nghiêng*, `code`, [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh]).
    - Các phương án: A., B., C., D. ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: B. Đáp án này đúng*).
    - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
 
-3. Quy chuẩn trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
+6. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
    - Tiêu đề mục: Dùng # Tiêu đề lớn, ## Tiêu đề vừa, ### Tiêu đề nhỏ.
    - Từ khóa cốt lõi: Dùng **in đậm**.
-   - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng (Hệ thống sẽ tự tạo vạch phân cấp thụt lề).
+   - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng.
    - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
    - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận (Ví dụ: -> Do đó đáp án B đúng).
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
@@ -108,27 +116,23 @@ Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghi�
 
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 ```text
-Câu 1: Cho các nhận định sau về **Quang hợp ở thực vật**:
-1. Diễn ra chủ yếu ở bào quan lục lạp.
-2. Sản phẩm tạo ra gồm Glucose và khí O2.
-Hỏi có bao nhiêu nhận định **[do]ĐÚNG[/do]**?
-A. 0
-B. 1
-C. 2*
-D. 3
+Câu 1: It is generally believed that "Men make _____ house and women make _____ home".
+A. a / a*
+B. the / the
+C. a / the
+D. the / an
 
 Giải thích:
-# Phân tích chi tiết từng nhận định:
-- Nhận định 1: **ĐÚNG**. Lục lạp chứa chất diệp lục hấp thụ năng lượng ánh sáng mặt trời.
-- Nhận định 2: **ĐÚNG**. Phương trình tổng quát:
-  * 6CO2 + 6H2O -> C6H12O6 + 6O2
-> ==Kết luận:== Cả 2 nhận định đều chính xác.
--> Do đó, đáp án đúng là **C**.
+# Phân tích ngữ pháp & Thành ngữ:
+- Thành ngữ chuẩn tiếng Anh: **"Men make a house and women make a home"** (Đàn ông xây nhà, đàn bà xây tổ ấm).
+- Cả **house** và **home** đều là danh từ đếm được số ít mang nghĩa biểu trưng tổng quát:
+  * Nên sử dụng mạo từ bất định **a**.
+> ==Ghi nhớ:== Cụm *make a house & make a home* là cặp quán ngữ luôn đi cùng nhau.
+-> Do đó, đáp án đúng là **A**.
 ```
 
 Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block ```text ... ``` duy nhất:
 ```
-
 
 ---
 
