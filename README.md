@@ -87,3 +87,10 @@ Vui lòng tham khảo file [`SKILL.md`](./SKILL.md) trong gói này để biết
    - Nút thu gọn danh sách câu hỏi trên điện thoại để tối ưu không gian đọc bài.
 3. **Trải nghiệm di động hoàn hảo (Anti-Zoom Mobile Fix)**:
    - Khắc phục triệt để lỗi tự động phóng to màn hình khi mở modal thiết lập đề thi trên điện thoại (đảm bảo `font-size: 16px !important` cho tất cả ô nhập liệu).
+
+
+4. **Định dạng Gạch chân & Đồng bộ đáp án chống lệch**:
+   - Hỗ trợ cú pháp gạch chân `<u>...</u>`, `++...++`, `[u]...[/u]`.
+   - Nút `A/1` chuyển đổi thẻ đáp án `A, B, C, D` và `1, 2, 3, 4`.
+   - Nút `🔀` Bật/Tắt xáo trộn đáp án.
+   - Cơ chế tự động đồng bộ câu kết luận trong giải thích khớp với vị trí hiển thị thực tế trên màn hình.

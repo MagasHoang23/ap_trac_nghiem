@@ -206,3 +206,24 @@ Hệ thống tích hợp giải pháp đồng bộ dữ liệu đa thiết bị 
   2. Bấm *Deploy > New deployment > Web app > Execute as: Me > Who has access: Anyone*.
   3. Dán URL Web App vào ứng dụng -> Toàn bộ dữ liệu đề thi, tiến trình và lịch sử sẽ được mã hóa AES-256 rồi gửi thẳng vào Google Drive của người dùng.
   4. Hoàn toàn miễn phí, không bao giờ hết hạn token, và không cần đăng ký tài khoản Google Cloud Developer.
+
+
+---
+
+## 8. CÚ PHÁP GẠCH CHÂN & CƠ CHẾ ĐỒNG BỘ ĐÁP ÁN KHI XÁO TRỘN
+
+### 8.1. Định dạng Gạch chân (Underline):
+Hỗ trợ các cú pháp:
+- `<u>từ cần gạch chân</u>`
+- `++từ cần gạch chân++`
+- `[u]từ cần gạch chân[/u]` hoặc `[gc]từ cần gạch chân[/gc]`
+Biên dịch thành `<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">...</span>` rõ nét, rất thích hợp cho đề thi tiếng Anh (tìm lỗi sai, phát âm, trọng âm, từ đồng nghĩa/trái nghĩa).
+
+### 8.2. Giải quyết triệt để lỗi lệch đáp án khi xáo trộn (Option-Explanation Synchronization):
+1. **Nguyên nhân**: AI soạn đề mặc định coi dòng đầu là A, dòng hai là B... và viết câu kết luận như *"Do đó đáp án đúng là A"*. Khi ứng dụng xáo trộn ngẫu nhiên vị trí các lựa chọn, câu A có thể rơi vào nút D, dẫn đến việc nút D đổi màu xanh nhưng lời giải lại ghi A gây hiểu nhầm.
+2. **Cơ chế 3 lớp bảo vệ**:
+   - **Lớp 1 (Trong Prompt mẫu)**: Yêu cầu AI luôn kèm theo nội dung chữ của đáp án (VD: *"-> Do đó, đáp án đúng là: what marriage is (Đáp án A)"*).
+   - **Lớp 2 (Tự động đồng bộ trong App)**: Trình dựng giao diện tự động bắt các mẫu kết luận như *"đáp án đúng là [A-H]"* và tự động cập nhật khớp với chữ cái/số của nút đáp án thực tế trên màn hình (`[D] what marriage is`).
+   - **Lớp 3 (Công cụ điều khiển)**:
+     * Nút `A/1`: Chuyển đổi linh hoạt giữa kiểu thẻ chữ cái (`A, B, C, D`) và kiểu số thứ tự (`1, 2, 3, 4`).
+     * Nút `🔀`: Cho phép Bật / Tắt tính năng xáo trộn đáp án. Khi tắt, các phương án giữ nguyên 100% thứ tự A, B, C, D như đề bài gốc.

@@ -340,7 +340,7 @@
                     <span id="sync-label" class="hidden xs:inline sm:inline">Cloud Sync</span>
                 </button>
 
-                <!-- Thanh công cụ Căn chỉnh kích thước & Căn lề -->
+                <!-- Thanh công cụ Căn chỉnh kích thước, Căn lề, Thẻ đáp án & Xáo trộn -->
                 <div class="flex items-center bg-slate-700 rounded-lg p-0.5 border border-slate-600 text-xs">
                     <button id="btn-font-decrease" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200" title="Giảm cỡ chữ">A-</button>
                     <button id="btn-font-reset" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200 text-[11px]" title="Cỡ chữ chuẩn">A</button>
@@ -348,6 +348,15 @@
                     <span class="w-[1px] h-3.5 bg-slate-600 mx-0.5"></span>
                     <button id="btn-align-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-200" title="Căn lề (Trái / Căn đều)">
                         <span id="align-icon">☰</span>
+                    </button>
+                    <span class="w-[1px] h-3.5 bg-slate-600 mx-0.5"></span>
+                    <!-- Nút đổi kiểu thẻ đáp án: Chữ cái A B C D vs Số 1 2 3 4 -->
+                    <button id="btn-badge-style-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200 text-[11px]" title="Đổi kiểu thẻ đáp án: A, B, C, D hoặc 1, 2, 3, 4">
+                        <span id="badge-style-label">A/1</span>
+                    </button>
+                    <!-- Nút Bật/Tắt xáo trộn đáp án -->
+                    <button id="btn-shuffle-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-200" title="Bật/Tắt xáo trộn vị trí đáp án">
+                        <span id="shuffle-icon">🔀</span>
                     </button>
                 </div>
 
@@ -640,6 +649,7 @@
                     <div class="space-y-1.5">
                         <div><span class="format-cheat-badge">**in đậm**</span> hoặc <span class="format-cheat-badge">[b]in đậm[/b]</span>: <strong>Chữ in đậm</strong></div>
                         <div><span class="format-cheat-badge">*in nghiêng*</span> hoặc <span class="format-cheat-badge">[i]in nghiêng[/i]</span>: <em>Chữ in nghiêng</em></div>
+                        <div><span class="format-cheat-badge"><u>gạch chân</u></span>, <span class="format-cheat-badge">++gạch chân++</span> hoặc <span class="format-cheat-badge">[u]...[/u]</span>: <span class="underline underline-offset-4 decoration-2">Chữ gạch chân</span></div>
                         <div><span class="format-cheat-badge">==nổi bật==</span> hoặc <span class="format-cheat-badge">[hl]...[/hl]</span>: <mark class="bg-yellow-200 px-1 rounded">Đánh dấu vàng</mark></div>
                         <div><span class="format-cheat-badge">`mã/công thức`</span>: <code class="bg-gray-200 text-pink-600 px-1 rounded">Monospace</code></div>
                         <div><span class="format-cheat-badge">[do]...[/do]</span>, <span class="format-cheat-badge">[xanh]...[/xanh]</span>: <span class="text-red-500 font-medium">Đỏ</span>, <span class="text-emerald-600 font-medium">Xanh lá</span>...</div>
@@ -744,8 +754,12 @@
             s = s.replace(/\[hl\](.*?)\[\/hl\]/gi, '<mark class="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-medium border border-amber-200/70">$1</mark>');
 
             // 6. Gạch chân: [u]text[/u], &lt;u&gt;
-            s = s.replace(/\[u\](.*?)\[\/u\]/gi, '<span class="underline underline-offset-2">$1</span>');
-            s = s.replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/gi, '<span class="underline underline-offset-2">$1</span>');
+                        // 6. Gạch chân: ++text++, [u]text[/u], [gc]text[/gc], <u>text</u>, &lt;ins&gt;
+            s = s.replace(/\+\+([^+]+)\+\+/g, '<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">$1</span>');
+            s = s.replace(/\[(?:u|gc|gachchan)\](.*?)\[\/(?:u|gc|gachchan)\]/gi, '<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">$1</span>');
+            s = s.replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/gi, '<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">$1</span>');
+            s = s.replace(/<u>(.*?)<\/u>/gi, '<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">$1</span>');
+            s = s.replace(/&lt;ins&gt;(.*?)&lt;\/ins&gt;/gi, '<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">$1</span>');
 
             // 7. Gạch ngang: ~~text~~, [del]text[/del]
             s = s.replace(/~~([^~]+)~~/g, '<span class="line-through text-slate-400">$1</span>');
@@ -904,9 +918,11 @@
         // =========================================================================
         // BỘ ĐIỀU KHIỂN HIỂN THỊ & CĂN CHỈNH GIAO DIỆN (Display & Alignment Manager)
         // =========================================================================
-        const DISPLAY_SETTINGS_KEY = 'quiz_display_settings_v1';
+        const DISPLAY_SETTINGS_KEY = 'quiz_display_settings_v2';
         let currentFontSize = 'base'; // 'sm' | 'base' | 'lg' | 'xl'
         let currentTextAlign = 'left'; // 'left' | 'justify'
+        let currentBadgeStyle = 'letters'; // 'letters' ('A, B, C, D') | 'numbers' ('1, 2, 3, 4')
+        let shouldShuffleOptions = false; // Mặc định không xáo trộn để khớp 100% với lời giải của AI!
         let isMobileNavCollapsed = false;
 
         function initDisplaySettings() {
@@ -916,6 +932,8 @@
                     const parsed = JSON.parse(saved);
                     currentFontSize = parsed.fontSize || 'base';
                     currentTextAlign = parsed.textAlign || 'left';
+                    currentBadgeStyle = parsed.badgeStyle || 'letters';
+                    shouldShuffleOptions = (parsed.shuffleOptions !== undefined) ? !!parsed.shuffleOptions : false;
                 }
             } catch (e) { console.warn("Lỗi đọc cài đặt hiển thị:", e); }
 
@@ -941,11 +959,25 @@
                 pillEl.textContent = `${sizeLabels[currentFontSize] || 'Cỡ chuẩn'} • ${alignLabels[currentTextAlign] || 'Căn trái'}`;
             }
 
+            // Cập nhật trạng thái nút công cụ
+            const badgeLabel = document.getElementById('badge-style-label');
+            if (badgeLabel) badgeLabel.textContent = currentBadgeStyle === 'numbers' ? '1-4' : 'A-D';
+
+            const shuffleBtn = document.getElementById('btn-shuffle-toggle');
+            if (shuffleBtn) {
+                shuffleBtn.className = shouldShuffleOptions 
+                    ? 'px-1.5 sm:px-2 py-1 rounded bg-indigo-600 text-white font-bold'
+                    : 'px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-300 opacity-60';
+                shuffleBtn.title = shouldShuffleOptions ? 'Xáo trộn đáp án: ĐANG BẬT' : 'Xáo trộn đáp án: ĐÃ TẮT (Giữ nguyên A, B, C, D)';
+            }
+
             // Lưu cài đặt
             try {
                 localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
                     fontSize: currentFontSize,
-                    textAlign: currentTextAlign
+                    textAlign: currentTextAlign,
+                    badgeStyle: currentBadgeStyle,
+                    shuffleOptions: shouldShuffleOptions
                 }));
             } catch (e) {}
         }
@@ -1002,6 +1034,30 @@
                         const label = document.getElementById('mobile-nav-label');
                         if (label) label.textContent = isMobileNavCollapsed ? 'Hiện DS' : 'Ẩn DS';
                     }
+                });
+            }
+
+            // Nút chuyển đổi kiểu thẻ đáp án (A,B,C,D vs 1,2,3,4)
+            const btnBadgeStyle = document.getElementById('btn-badge-style-toggle');
+            if (btnBadgeStyle) {
+                btnBadgeStyle.addEventListener('click', () => {
+                    currentBadgeStyle = (currentBadgeStyle === 'letters') ? 'numbers' : 'letters';
+                    applyDisplaySettings();
+                    if (currentQuizQuestions && currentQuizQuestions.length > 0) {
+                        displayQuestion(currentQuestionIndex);
+                    }
+                });
+            }
+
+            // Nút Bật/Tắt xáo trộn đáp án
+            const btnShuffle = document.getElementById('btn-shuffle-toggle');
+            if (btnShuffle) {
+                btnShuffle.addEventListener('click', () => {
+                    shouldShuffleOptions = !shouldShuffleOptions;
+                    applyDisplaySettings();
+                    alert(shouldShuffleOptions 
+                        ? "🔀 Đã BẬT xáo trộn đáp án! Vị trí các lựa chọn sẽ được hoán đổi ngẫu nhiên mỗi lần thi." 
+                        : "⏹️ Đã TẮT xáo trộn đáp án! Thứ tự đáp án A, B, C, D sẽ được giữ nguyên 100% đúng như đề bài ban đầu.");
                 });
             }
         }
@@ -2195,12 +2251,14 @@ function doGet(e) {
                 score = 0;
                 secondsElapsed = 0;
 
-                currentQuizQuestions = [...quizDataForCurrentSession]; 
+                currentQuizQuestions = JSON.parse(JSON.stringify(quizDataForCurrentSession)); 
                 if (currentQuizQuestions.length > 0) {
                     shuffleArray(currentQuizQuestions);
                     currentQuizQuestions.forEach(question => {
                         if (question && question.options && Array.isArray(question.options)) { 
-                            shuffleArray(question.options);
+                            if (shouldShuffleOptions) {
+                                shuffleArray(question.options);
+                            }
                             if (question.correctAnswer && question.correctAnswer.endsWith('*')) {
                                 question.correctAnswer = question.correctAnswer.slice(0, -1).trim();
                             }
@@ -2270,9 +2328,10 @@ function doGet(e) {
                     const optionHeaderDiv = document.createElement('div');
                     optionHeaderDiv.classList.add('flex', 'items-start', 'gap-2.5');
 
+                    const currentBadge = currentBadgeStyle === 'numbers' ? (optIdx + 1) : (optionLetters[optIdx] || (optIdx + 1));
                     const letterBadge = document.createElement('span');
                     letterBadge.classList.add('option-letter-badge', 'inline-flex', 'items-center', 'justify-center', 'w-7', 'h-7', 'rounded-lg', 'bg-slate-100', 'text-slate-700', 'font-bold', 'text-xs', 'md:text-sm', 'shrink-0', 'border', 'border-slate-300', 'transition-colors');
-                    letterBadge.textContent = optionLetters[optIdx] || (optIdx + 1);
+                    letterBadge.textContent = currentBadge;
 
                     const contentSpan = document.createElement('div');
                     contentSpan.classList.add('option-content', 'flex-grow', 'pt-0.5', 'text-sm', 'md:text-base', 'text-slate-800', 'leading-snug');
@@ -2323,17 +2382,32 @@ function doGet(e) {
                             } else {
                                 contentToRender = specificExpl || generalExpl || "Không có giải thích chi tiết.";
                             }
+
+                            // TỰ ĐỘNG ĐỒNG BỘ CÂU KẾT LUẬN TRONG LỜI GIẢI VỚI NÚT ĐÁP ÁN THỰC TẾ
+                            const currentBadge = currentBadgeStyle === 'numbers' ? (optIdx + 1) : (optionLetters[optIdx] || (optIdx + 1));
+                            contentToRender = contentToRender.replace(
+                                /(?:->|=>|➜)?\s*(?:Do đó,?\s*)?(?:đáp án đúng\s+(?:là\s+)?|chọn\s+đáp án\s+|kết luận:?\s*(?:đáp án\s+)?)\s*[*_]*([A-H])(?:\b|\.|\*|\))/gi,
+                                () => {
+                                    return `-> Do đó, đáp án đúng là: **[${currentBadge}] ${escapeHtml(question.correctAnswer)}**`;
+                                }
+                            );
                             
                             let titleHtml = "";
                             if (isSelected) {
-                                titleHtml = `<div class="flex items-center justify-between font-bold text-emerald-800 text-xs md:text-sm border-b border-emerald-200/80 pb-1.5 mb-2">
-                                    <span class="flex items-center gap-1.5">✅ Chính xác!</span>
-                                    <span class="text-[11px] font-normal bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">💡 Giải thích chi tiết</span>
+                                titleHtml = `<div class="flex items-center justify-between font-bold text-emerald-800 text-xs md:text-sm border-b border-emerald-200/80 pb-2 mb-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-emerald-600 text-base">✅</span>
+                                        <span>Chính xác! Đáp án đúng: <strong class="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-bold">[${currentBadge}]</strong> <span class="text-slate-900">${escapeHtml(question.correctAnswer)}</span></span>
+                                    </div>
+                                    <span class="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full shrink-0">💡 Giải thích chi tiết</span>
                                 </div>`;
                             } else {
-                                titleHtml = `<div class="flex items-center justify-between font-bold text-emerald-800 text-xs md:text-sm border-b border-emerald-200/80 pb-1.5 mb-2">
-                                    <span class="flex items-center gap-1.5">👉 Đáp án đúng là:</span>
-                                    <span class="text-[11px] font-normal bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">💡 Giải thích chi tiết</span>
+                                titleHtml = `<div class="flex items-center justify-between font-bold text-emerald-800 text-xs md:text-sm border-b border-emerald-200/80 pb-2 mb-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-emerald-600 text-base">👉</span>
+                                        <span>Đáp án đúng là: <strong class="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-bold">[${currentBadge}]</strong> <span class="text-slate-900">${escapeHtml(question.correctAnswer)}</span></span>
+                                    </div>
+                                    <span class="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full shrink-0">💡 Giải thích chi tiết</span>
                                 </div>`;
                             }
 
@@ -2748,21 +2822,30 @@ function doGet(e) {
 
 3. QUY TẮC CHỖ TRỐNG ĐIỀN TỪ: Với các câu hỏi điền từ vào chỗ trống, hãy dùng 4 hoặc 5 dấu gạch dưới (Ví dụ: "Men make _____ house and women make _____ home").
 
-4. QUY TẮC IN ĐẬM VÀ IN NGHIÊNG:
-   - Để in đậm: CHỈ DÙNG **từ khóa** (KHÔNG dùng 2 dấu gạch dưới __ để tránh lỗi nuốt chỗ trống điền từ).
-   - Để in nghiêng: CHỈ DÙNG *từ khóa*.
+4. QUY TẮC IN ĐẬM, IN NGHIÊNG VÀ GẠCH CHÂN:
+   - In đậm: CHỈ DÙNG **từ khóa** hoặc [b]từ khóa[/b] (KHÔNG dùng 2 dấu gạch dưới __ để tránh lỗi nuốt chỗ trống điền từ).
+   - In nghiêng: CHỈ DÙNG *từ khóa* hoặc [i]từ khóa[/i].
+   - Gạch chân: DÙNG <u>từ khóa</u> hoặc ++từ khóa++ hoặc [u]từ khóa[/u] (rất cần thiết cho các câu hỏi phát âm, trọng âm, tìm lỗi sai gạch chân, hoặc từ đồng nghĩa/trái nghĩa).
 
-5. Cấu trúc mỗi câu hỏi gồm:
-   - Tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, *in nghiêng*, \`code\`, [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh]).
-   - Các phương án: A., B., C., D. ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: B. Đáp án này đúng*).
+5. ⚠️ QUY TẮC ĐỒNG BỘ GIẢI THÍCH KHI ỨNG DỤNG XÁO TRỘN ĐÁP ÁN:
+   Vì ứng dụng làm bài có tính năng tự động xáo trộn ngẫu nhiên vị trí các lựa chọn đáp án:
+   - Trong phần "Giải thích:": TUYỆT ĐỐI KHÔNG được chỉ kết luận cộc lốc kiểu "Do đó đáp án đúng là A" hay "loại B và D".
+   - BẮT BUỘC PHẢI LUÔN GHI KÈM NỘI DUNG CHỮ CỦA ĐÁP ÁN!
+     * Ví dụ đúng khi kết luận: "-> Do đó, đáp án đúng là: what marriage is (hoặc (A) what marriage is)".
+     * Ví dụ đúng khi loại trừ: "Loại phương án (what is marriage) vì bị đảo ngữ; loại phương án (what was marriage) vì chia sai thì...".
+   - Bằng cách luôn ghi rõ nội dung chữ của đáp án trong giải thích, dù ứng dụng có xáo trộn thứ tự đáp án thành A, B, C hay D thì lời giải vẫn luôn chính xác và đồng nhất 100%!
+
+6. Cấu trúc mỗi câu hỏi gồm:
+   - Tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, <u>gạch chân</u>, *in nghiêng*, \`code\`...).
+   - Các phương án: A., B., C., D. (Hoặc A. (A) [nội dung]). ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: A. what marriage is*).
    - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
 
-6. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
+7. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
    - Tiêu đề mục: Dùng # Tiêu đề lớn, ## Tiêu đề vừa, ### Tiêu đề nhỏ.
-   - Từ khóa cốt lõi: Dùng **in đậm**.
+   - Từ khóa cốt lõi: Dùng **in đậm**, <u>gạch chân</u>.
    - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng.
    - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
-   - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận (Ví dụ: -> Do đó đáp án B đúng).
+   - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận kèm nội dung đáp án (Ví dụ: -> Do đó, đáp án đúng là: **what marriage is**).
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
    - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
 
@@ -2780,7 +2863,7 @@ Giải thích:
 - Cả **house** và **home** đều là danh từ đếm được số ít mang nghĩa biểu trưng tổng quát:
   * Nên sử dụng mạo từ bất định **a**.
 > ==Ghi nhớ:== Cụm *make a house & make a home* là cặp quán ngữ luôn đi cùng nhau.
--> Do đó, đáp án đúng là **A**.
+-> Do đó, đáp án đúng là: **a / a** (Đáp án A).
 \`\`\`
 
 Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block \`\`\`text ... \`\`\` duy nhất:`;
