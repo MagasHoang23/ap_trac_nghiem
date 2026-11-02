@@ -334,6 +334,12 @@
 
             <!-- Header Action Controls -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Nút Đồng bộ 2 thiết bị Realtime (P2P) -->
+                <button id="btn-quick-peer-sync" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm active:scale-95" title="Đồng bộ tức thì bộ đề và tiến trình giữa 2 thiết bị">
+                    <span class="text-sm">📲</span>
+                    <span class="hidden xs:inline sm:inline">Đồng bộ 2 máy</span>
+                </button>
+
                 <!-- Nút Đồng bộ Google Drive -->
                 <button id="cloud-sync-btn" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600 transition-all shadow-sm active:scale-95" title="Mở quản lý tài khoản & đồng bộ đám mây">
                     <span id="sync-icon" class="text-sm">☁️</span>
@@ -433,6 +439,56 @@
     </footer>
 
         <!-- MODAL ĐĂNG NHẬP / ĐĂNG KÝ & ĐỒNG BỘ GOOGLE DRIVE -->
+        <!-- MODAL ĐỒNG BỘ 2 MÁY THỜI GIAN THỰC (PEER SYNC MODAL) -->
+    <div id="peer-sync-modal" class="modal-overlay hidden">
+        <div class="modal-content bg-white p-5 rounded-2xl shadow-2xl w-full max-w-md animate-scale-up">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📲</span>
+                    <div>
+                        <h3 class="font-bold text-base text-slate-800">Đồng bộ tức thì 2 thiết bị</h3>
+                        <p class="text-[11px] text-gray-500">Truyền đề thi & tiến trình giữa Điện thoại và Máy tính (<100ms)</p>
+                    </div>
+                </div>
+                <button id="close-peer-modal-btn" class="text-gray-400 hover:text-gray-600 font-bold text-lg p-1 rounded-lg">✕</button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-700">
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-3 rounded-xl space-y-1">
+                    <div class="flex items-center justify-between font-bold text-emerald-900">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Kênh Live Sync:</span>
+                        <span id="peer-modal-status-badge" class="px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold">Đang kết nối</span>
+                    </div>
+                    <p id="peer-modal-account-info" class="text-emerald-800 text-[11px] break-all">Tài khoản: Chưa đăng nhập</p>
+                    <p id="peer-modal-quiz-info" class="text-emerald-900 font-semibold text-[11px]">Đề hiện tại trên máy này: 0 câu</p>
+                </div>
+
+                <div class="space-y-1.5">
+                    <button id="btn-modal-push-quiz" type="button" class="w-full p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 text-xs sm:text-sm">
+                        <span class="text-base">📤</span>
+                        <span id="push-btn-label">Đẩy bộ đề máy này sang máy kia ngay</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 text-center">Bấm nút trên để máy kia (điện thoại hoặc máy tính) nhận đúng bộ đề đang mở trên máy này.</p>
+                </div>
+
+                <div class="space-y-1.5 pt-2 border-t border-gray-100">
+                    <button id="btn-modal-pull-quiz" type="button" class="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-300 transition-all active:scale-95 text-xs sm:text-sm">
+                        <span class="text-base">📥</span>
+                        <span>Kéo bộ đề từ máy kia về máy này</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 text-center">Bấm nút trên nếu bạn muốn lấy đề và bài làm đang chạy trên máy kia về máy này.</p>
+                </div>
+
+                <div class="pt-2.5 border-t border-gray-100 flex items-center justify-between">
+                    <label for="modal-toggle-follow" class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="modal-toggle-follow" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4" checked>
+                        <span class="font-semibold text-slate-800 text-xs">🔗 Tự động lật câu hỏi theo máy kia (Follow navigation)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="cloud-sync-modal" class="modal-overlay hidden">
         <div class="modal-content modal-content-scrollable bg-white p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh]">
             <!-- Header Modal -->
@@ -1249,24 +1305,47 @@
                 const gasUrl = this.getGasUrl();
                 if (!gasUrl) throw new Error("Chưa cấu hình URL Google Apps Script.");
 
-                const res = await fetch(gasUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (!data.success && data.error) throw new Error(data.error);
-                return data;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                try {
+                    const res = await fetch(gasUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    if (!res.ok) throw new Error(`Google Apps Script trả về HTTP ${res.status}`);
+                    const data = await res.json();
+                    if (!data.success && data.error) throw new Error(data.error);
+                    return data;
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    if (err.name === 'AbortError') throw new Error("Quá thời gian kết nối Google Apps Script (Timeout 8s).");
+                    throw err;
+                }
             },
 
             async fetchViaGAS() {
                 const gasUrl = this.getGasUrl();
                 if (!gasUrl) throw new Error("Chưa cấu hình URL Google Apps Script.");
 
-                const res = await fetch(gasUrl, { method: 'GET' });
-                const data = await res.json();
-                if (data.error) throw new Error(data.error);
-                return data;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                try {
+                    const res = await fetch(gasUrl, { method: 'GET', signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (!res.ok) throw new Error(`Google Apps Script trả về HTTP ${res.status}`);
+                    const data = await res.json();
+                    if (data.error) throw new Error(data.error);
+                    return data;
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    if (err.name === 'AbortError') throw new Error("Quá thời gian kết nối Google Apps Script (Timeout 8s).");
+                    throw err;
+                }
             },
 
             // 2. Giao tiếp qua Google OAuth GIS
@@ -1444,19 +1523,30 @@ function doGet(e) {
         // =========================================================================
         // THÔNG BÁO THAO TÁC THỜI GIAN THỰC (LIVE TOAST)
         // =========================================================================
-        function showLiveToast(msg, targetIndex = -1) {
+        function showLiveToast(msg, targetIndex = -1, actionBtn = null) {
             let toast = document.getElementById('live-sync-toast');
             if (!toast) {
                 toast = document.createElement('div');
                 toast.id = 'live-sync-toast';
-                toast.className = 'fixed bottom-5 right-5 z-50 bg-slate-900/95 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-2xl border border-slate-700/80 backdrop-blur flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-3 select-none';
+                toast.className = 'fixed bottom-5 right-5 z-50 bg-slate-900/95 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-2xl border border-slate-700/80 backdrop-blur flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-3 select-none max-w-sm';
                 document.body.appendChild(toast);
             }
-            const viewBtnHtml = (targetIndex >= 0) 
-                ? `<button type="button" id="live-toast-view-btn" class="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold px-2 py-0.5 rounded text-white ml-1 transition-all">Xem</button>` 
-                : '';
-            toast.innerHTML = `<span class="text-emerald-400 font-bold text-sm">⚡</span><span class="font-medium">${escapeHtml(msg)}</span>${viewBtnHtml}`;
+            let actionHtml = '';
+            if (actionBtn && actionBtn.text) {
+                actionHtml = `<button type="button" id="live-toast-custom-btn" class="bg-emerald-600 hover:bg-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded text-white ml-1 transition-all shrink-0">${escapeHtml(actionBtn.text)}</button>`;
+            } else if (targetIndex >= 0) {
+                actionHtml = `<button type="button" id="live-toast-view-btn" class="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold px-2 py-0.5 rounded text-white ml-1 transition-all shrink-0">Xem</button>`;
+            }
+            toast.innerHTML = `<span class="text-emerald-400 font-bold text-sm shrink-0">⚡</span><span class="font-medium">${escapeHtml(msg)}</span>${actionHtml}`;
             
+            const customBtn = toast.querySelector('#live-toast-custom-btn');
+            if (customBtn && actionBtn && typeof actionBtn.onClick === 'function') {
+                customBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    actionBtn.onClick();
+                };
+            }
+
             const viewBtn = toast.querySelector('#live-toast-view-btn');
             if (viewBtn) {
                 viewBtn.onclick = (e) => {
@@ -1471,7 +1561,7 @@ function doGet(e) {
             clearTimeout(toast._timeout);
             toast._timeout = setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-3');
-            }, 3200);
+            }, 3600);
         }
 
         // =========================================================================
@@ -1482,7 +1572,13 @@ function doGet(e) {
             topic: null,
             isConnected: false,
             reconnectTimer: null,
+            followNavigation: true,
+            _isRemoteNavigating: false,
             deviceId: 'dev_' + Math.random().toString(36).substring(2, 9),
+
+            getDeviceType() {
+                return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Điện thoại' : 'Máy tính';
+            },
 
             async connect(account, password) {
                 if (!account || !password) return;
@@ -1497,7 +1593,16 @@ function doGet(e) {
                         this.isConnected = true;
                         console.log("⚡ Realtime Live Sync: Đã kết nối kênh thời gian thực:", this.topic);
                         CloudSyncManager.updateSyncBadge();
-                        showLiveToast("⚡ Đã kích hoạt Live Sync siêu tốc (<100ms)!");
+                        this.updatePeerModalUI();
+                        showLiveToast("⚡ Đã kích hoạt Live Sync (<100ms)!");
+
+                        // Thông báo cho thiết bị khác biết mình vừa kết nối
+                        this.broadcast({
+                            action: 'PEER_JOINED',
+                            deviceType: this.getDeviceType(),
+                            questionCount: (currentQuizQuestions && currentQuizQuestions.length) || 0,
+                            timestamp: Date.now()
+                        });
                     };
 
                     this.ws.onmessage = async (event) => {
@@ -1523,7 +1628,7 @@ function doGet(e) {
                     this.ws.onclose = () => {
                         this.isConnected = false;
                         CloudSyncManager.updateSyncBadge();
-                        // Tự động kết nối lại sau 4 giây
+                        this.updatePeerModalUI();
                         clearTimeout(this.reconnectTimer);
                         this.reconnectTimer = setTimeout(() => {
                             if (CloudSyncManager.currentUser) {
@@ -1548,6 +1653,7 @@ function doGet(e) {
                 }
                 this.isConnected = false;
                 CloudSyncManager.updateSyncBadge();
+                this.updatePeerModalUI();
             },
 
             async broadcast(actionObj) {
@@ -1574,11 +1680,125 @@ function doGet(e) {
                 }
             },
 
+            pushFullStateToPeers(alertOnDone = false) {
+                if (!currentQuizQuestions || currentQuizQuestions.length === 0) {
+                    alert("Hiện tại chưa có câu hỏi nào để đồng bộ. Vui lòng nạp đề thi trước.");
+                    return;
+                }
+                const snapshot = CloudSyncManager.getCurrentSnapshot();
+                const gasUrl = GoogleDriveAPI.getGasUrl();
+                const deviceType = this.getDeviceType();
+
+                this.broadcast({
+                    action: 'SYNC_FULL_QUIZ_AND_PROGRESS',
+                    snapshot: snapshot,
+                    gasUrl: gasUrl,
+                    deviceType: deviceType,
+                    timestamp: Date.now()
+                });
+                showLiveToast(`📤 Đã gửi trọn bộ đề thi (${currentQuizQuestions.length} câu) sang thiết bị khác!`);
+                if (alertOnDone) alert(`✅ Đã đẩy thành công bộ đề thi (${currentQuizQuestions.length} câu) sang thiết bị khác!`);
+            },
+
+            requestFullStateFromPeers() {
+                const deviceType = this.getDeviceType();
+                this.broadcast({
+                    action: 'REQUEST_PEER_SYNC',
+                    deviceType: deviceType,
+                    timestamp: Date.now()
+                });
+                showLiveToast(`📡 Đang yêu cầu kéo đề thi từ thiết bị khác...`);
+            },
+
+            updatePeerModalUI() {
+                const statusBadge = document.getElementById('peer-modal-status-badge');
+                const accountInfo = document.getElementById('peer-modal-account-info');
+                const quizInfo = document.getElementById('peer-modal-quiz-info');
+                const pushBtnLabel = document.getElementById('push-btn-label');
+
+                if (statusBadge) {
+                    if (this.isConnected) {
+                        statusBadge.textContent = '⚡ Đã kết nối';
+                        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold';
+                    } else if (CloudSyncManager.currentUser) {
+                        statusBadge.textContent = '⏳ Đang kết nối...';
+                        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] bg-amber-500 text-white font-bold';
+                    } else {
+                        statusBadge.textContent = 'Chưa đăng nhập';
+                        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] bg-gray-400 text-white font-bold';
+                    }
+                }
+
+                if (accountInfo) {
+                    accountInfo.textContent = CloudSyncManager.currentUser 
+                        ? `Tài khoản: ${CloudSyncManager.currentUser.email}`
+                        : `Tài khoản: Chưa đăng nhập (Vui lòng đăng nhập ở mục Cloud Sync)`;
+                }
+
+                const count = (currentQuizQuestions && currentQuizQuestions.length) || 0;
+                if (quizInfo) {
+                    quizInfo.textContent = `Đề hiện tại trên ${this.getDeviceType()}: ${count} câu`;
+                }
+                if (pushBtnLabel) {
+                    pushBtnLabel.textContent = `Đẩy đề này (${count} câu) sang máy kia ngay`;
+                }
+            },
+
             handleRemoteAction(payload) {
                 if (!payload || !payload.action) return;
                 console.log("⚡ Nhận thao tác thời gian thực từ thiết bị khác:", payload.action, payload);
 
-                if (payload.action === 'SELECT_ANSWER') {
+                // 1. THIẾT BỊ KHÁC VỪA KẾT NỐI
+                if (payload.action === 'PEER_JOINED') {
+                    const devType = payload.deviceType || 'Thiết bị khác';
+                    const remoteCount = payload.questionCount || 0;
+                    const localCount = (currentQuizQuestions && currentQuizQuestions.length) || 0;
+
+                    if (localCount > 0 && remoteCount !== localCount) {
+                        showLiveToast(`⚡ ${devType} vừa vào (đang có ${remoteCount} câu).`, -1, {
+                            text: 'Đồng bộ ngay',
+                            onClick: () => {
+                                const peerModal = document.getElementById('peer-sync-modal');
+                                if (peerModal) {
+                                    peerModal.classList.remove('hidden');
+                                    RealtimeSync.updatePeerModalUI();
+                                }
+                            }
+                        });
+                    } else {
+                        showLiveToast(`🟢 ${devType} vừa kết nối chung kênh!`);
+                    }
+                }
+                // 2. NHẬN TOÀN BỘ ĐỀ THI VÀ TIẾN TRÌNH TỪ MÁY KHÁC
+                else if (payload.action === 'SYNC_FULL_QUIZ_AND_PROGRESS') {
+                    const { snapshot, gasUrl, deviceType } = payload;
+                    if (snapshot && Array.isArray(snapshot.currentQuizQuestions) && snapshot.currentQuizQuestions.length > 0) {
+                        // Tự động cấu hình Google Drive Apps Script URL nếu máy này chưa có
+                        if (gasUrl && typeof GoogleDriveAPI !== 'undefined' && !GoogleDriveAPI.getGasUrl()) {
+                            GoogleDriveAPI.setGasUrl(gasUrl);
+                            const inputGas = document.getElementById('input-gas-web-app-url');
+                            if (inputGas) inputGas.value = gasUrl;
+                            console.log("Đã tự động cấu hình Google Drive Web App URL từ thiết bị kia:", gasUrl);
+                        }
+
+                        this._isRemoteNavigating = true;
+                        CloudSyncManager.restoreFromSnapshot(snapshot);
+                        this._isRemoteNavigating = false;
+
+                        saveCurrentState(false);
+                        const devName = deviceType || 'thiết bị khác';
+                        showLiveToast(`⚡ Đã đồng bộ toàn bộ đề thi (${snapshot.currentQuizQuestions.length} câu) từ ${devName}! Cả 2 máy hiện đã khớp nhau!`);
+                    }
+                }
+                // 3. THIẾT BỊ KHÁC YÊU CẦU KÉO ĐỀ VỀ
+                else if (payload.action === 'REQUEST_PEER_SYNC') {
+                    if (currentQuizQuestions && currentQuizQuestions.length > 0) {
+                        this.pushFullStateToPeers(false);
+                        showLiveToast(`📤 Đã chia sẻ đề thi sang ${escapeHtml(payload.deviceType || 'thiết bị khác')}!`);
+                    }
+                }
+                // 4. THAO TÁC CHỌN ĐÁP ÁN (DƯỚI 100MS)
+                else if (payload.action === 'SELECT_ANSWER') {
                     const { questionId, optionText, questionIndex } = payload;
                     if (questionId && optionText !== undefined) {
                         const isFirstTime = !userSelections[questionId];
@@ -1608,9 +1828,24 @@ function doGet(e) {
                         }
                         const qNum = (targetIdx >= 0 ? targetIdx : questionIndex) + 1;
                         showLiveToast(`⚡ Thiết bị khác vừa chọn đáp án Câu ${qNum}!`, targetIdx);
-                        if (typeof saveCurrentState === 'function') saveCurrentState();
+                        saveCurrentState(false);
                     }
-                } else if (payload.action === 'TOGGLE_FLAG') {
+                }
+                // 5. CHUYỂN CÂU HỎI THEO MÁY KIA (FOLLOW NAVIGATION)
+                else if (payload.action === 'NAVIGATE_QUESTION') {
+                    if (typeof payload.questionIndex === 'number' && payload.questionIndex !== currentQuestionIndex) {
+                        const toggleFollow = document.getElementById('modal-toggle-follow');
+                        const isFollowEnabled = toggleFollow ? toggleFollow.checked : true;
+                        if (isFollowEnabled && typeof displayQuestion === 'function') {
+                            this._isRemoteNavigating = true;
+                            displayQuestion(payload.questionIndex);
+                            this._isRemoteNavigating = false;
+                            showLiveToast(`⚡ Chuyển sang Câu ${payload.questionIndex + 1} theo thiết bị khác!`, payload.questionIndex);
+                        }
+                    }
+                }
+                // 6. CẮM CỜ / BỎ CỜ
+                else if (payload.action === 'TOGGLE_FLAG') {
                     const { questionId, questionIndex, isFlagged } = payload;
                     if (isFlagged) {
                         flaggedQuestions.add(questionId);
@@ -1627,27 +1862,24 @@ function doGet(e) {
                     }
                     const qNum = (targetIdx >= 0 ? targetIdx : questionIndex) + 1;
                     showLiveToast(`⚡ Thiết bị khác vừa ${isFlagged ? 'cắm cờ' : 'bỏ cắm cờ'} Câu ${qNum}!`, targetIdx);
-                    if (typeof saveCurrentState === 'function') saveCurrentState();
-                } else if (payload.action === 'RETRY_QUIZ') {
+                    saveCurrentState(false);
+                }
+                // 7. LÀM LẠI ĐỀ
+                else if (payload.action === 'RETRY_QUIZ') {
                     showLiveToast("⚡ Thiết bị khác vừa bấm làm lại đề!");
                     attemptNumber = payload.attemptNumber || (attemptNumber + 1);
                     if (typeof initializeQuiz === 'function') {
                         initializeQuiz();
                     }
-                } else if (payload.action === 'SUBMIT_QUIZ') {
+                }
+                // 8. NỘP BÀI
+                else if (payload.action === 'SUBMIT_QUIZ') {
                     showLiveToast("⚡ Thiết bị khác vừa nộp bài! Đang cập nhật kết quả...");
                     setTimeout(() => {
                         if (CloudSyncManager.isConnected()) {
                             CloudSyncManager.fetchFromCloud(false);
                         }
                     }, 1200);
-                } else if (payload.action === 'NEW_QUIZ_LOADED') {
-                    showLiveToast("⚡ Thiết bị khác vừa nạp đề mới! Đang đồng bộ...");
-                    setTimeout(() => {
-                        if (CloudSyncManager.isConnected()) {
-                            CloudSyncManager.fetchFromCloud(false);
-                        }
-                    }, 1500);
                 }
             }
         };
@@ -2571,6 +2803,14 @@ function doGet(e) {
         function displayQuestion(index) {
             if (index < 0 || !currentQuizQuestions || index >= currentQuizQuestions.length) return;
             currentQuestionIndex = index;
+
+            // Bắn realtime chuyển câu hỏi sang thiết bị khác (nếu không phải do remote kích hoạt)
+            if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected && !RealtimeSync._isRemoteNavigating) {
+                RealtimeSync.broadcast({
+                    action: 'NAVIGATE_QUESTION',
+                    questionIndex: index
+                });
+            }
             const question = currentQuizQuestions[index];
             if (!question) {
                 questionTextEl.textContent = "Lỗi: Không tải được câu hỏi.";
@@ -2894,7 +3134,7 @@ function doGet(e) {
                 secondsElapsed++;
                 if(timerEl) timerEl.textContent = formatTime(secondsElapsed);
                 if (secondsElapsed % 5 === 0 && typeof saveCurrentState === 'function') {
-                    saveCurrentState();
+                    saveCurrentState(false); // Chỉ lưu LocalStorage, KHÔNG spam Cloud Drive
                 }
             }, 1000);
         }
@@ -3423,7 +3663,7 @@ Giải thích:
         const STORAGE_KEY = 'trac_nghiem_app_history_v2';
         const CURRENT_STATE_STORAGE_KEY = 'trac_nghiem_app_current_state_v2';
 
-        function saveCurrentState() {
+        function saveCurrentState(syncToCloud = true) {
             if (isSubmitted) return;
             const state = {
                 quizDataForCurrentSession,
@@ -3437,8 +3677,8 @@ Giải thích:
                 localStorage.setItem(CURRENT_STATE_STORAGE_KEY, JSON.stringify(state));
             } catch (e) { console.error("Lỗi lưu trạng thái:", e); }
 
-            // Tự động kích hoạt đồng bộ ngầm lên Cloud
-            if (typeof CloudSyncManager !== 'undefined') {
+            // Chỉ kích hoạt đồng bộ Cloud khi có tương tác thực sự từ người dùng
+            if (syncToCloud && typeof CloudSyncManager !== 'undefined') {
                 CloudSyncManager.markDirtyAndQueueSync(1500);
             }
         }
@@ -3599,6 +3839,53 @@ Giải thích:
                 }
             }
         });
+
+
+        // =========================================================================
+        // SỰ KIỆN GIAO DIỆN MODAL ĐỒNG BỘ 2 MÁY (PEER SYNC)
+        // =========================================================================
+        const quickPeerSyncBtn = document.getElementById('btn-quick-peer-sync');
+        const peerSyncModal = document.getElementById('peer-sync-modal');
+        const closePeerModalBtn = document.getElementById('close-peer-modal-btn');
+        const btnModalPushQuiz = document.getElementById('btn-modal-push-quiz');
+        const btnModalPullQuiz = document.getElementById('btn-modal-pull-quiz');
+
+        if (quickPeerSyncBtn && peerSyncModal) {
+            quickPeerSyncBtn.addEventListener('click', () => {
+                if (!CloudSyncManager.currentUser) {
+                    alert("Vui lòng mở mục 'Cloud Sync' (nút ☁️ bên cạnh) để đăng nhập cùng 1 tài khoản và mật khẩu trên cả 2 thiết bị trước.");
+                    const cloudModal = document.getElementById('cloud-sync-modal');
+                    if (cloudModal) cloudModal.classList.remove('hidden');
+                    return;
+                }
+                peerSyncModal.classList.remove('hidden');
+                if (typeof RealtimeSync !== 'undefined') RealtimeSync.updatePeerModalUI();
+            });
+        }
+
+        if (closePeerModalBtn && peerSyncModal) {
+            closePeerModalBtn.addEventListener('click', () => {
+                peerSyncModal.classList.add('hidden');
+            });
+        }
+
+        if (btnModalPushQuiz) {
+            btnModalPushQuiz.addEventListener('click', () => {
+                if (typeof RealtimeSync !== 'undefined') {
+                    RealtimeSync.pushFullStateToPeers(true);
+                    if (peerSyncModal) peerSyncModal.classList.add('hidden');
+                }
+            });
+        }
+
+        if (btnModalPullQuiz) {
+            btnModalPullQuiz.addEventListener('click', () => {
+                if (typeof RealtimeSync !== 'undefined') {
+                    RealtimeSync.requestFullStateFromPeers();
+                    if (peerSyncModal) peerSyncModal.classList.add('hidden');
+                }
+            });
+        }
 
     </script>
 </body>

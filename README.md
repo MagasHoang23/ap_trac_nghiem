@@ -100,3 +100,6 @@ Vui lòng tham khảo file [`SKILL.md`](./SKILL.md) trong gói này để biết
    - Thông báo nổi tương tác (*Live Sync Toast*): Hiển thị thông báo khi có thao tác từ thiết bị khác kèm nút xem nhanh câu hỏi đó.
    - Cơ chế bảo mật tuyệt đối: Kênh truyền thông được mã hóa đầu cuối bằng thuật toán AES-GCM 256-bit và định danh kênh theo SHA-256(Email + Mật khẩu).
    - Lưu trữ song song bền vững trên Google Drive: Toàn bộ tiến trình tự động sao lưu vào Drive sau mỗi 1.5 giây.
+
+   - **Nút "📲 Đồng bộ 2 máy"**: Khi 2 máy đang mở 2 đề thi khác nhau (ví dụ: máy tính 30 câu, điện thoại 25 câu), người dùng chỉ cần bấm nút `📲 Đồng bộ 2 máy` -> `Đẩy bộ đề máy này sang máy kia` để cả 2 thiết bị lập tức chuyển về cùng một bộ đề 100% trong tích tắc.
+   - **Tự động chuyển câu song song (Follow Navigation)**: Bật/Tắt chế độ tự động lật câu hỏi trên máy tính mỗi khi bạn bấm chuyển câu trên điện thoại.

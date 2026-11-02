@@ -271,3 +271,18 @@ Biên dịch thành `<span class="underline underline-offset-4 decoration-2 deco
    - Thời gian chờ ghi ngầm (debounce) được tối ưu rút ngắn xuống **1.5 giây**.
    - Mọi trạng thái làm bài, đề thi mới nạp, và snapshot lịch sử làm bài đều được lưu bền vững trên file `ap_trac_nghiem_cloud_backup.json` trong Google Drive của người dùng.
    - Khi tắt máy hoặc mở thiết bị mới sau thời gian dài ngoại tuyến, ứng dụng sẽ tải snapshot mới nhất từ Google Drive về, sau đó tiếp tục kết nối vào Live Sync WebSocket.
+
+
+### 9.3. Xử lý trường hợp "Hai máy đang có hai dữ liệu/bộ đề khác nhau":
+- **Nguyên nhân**:
+  1. Người dùng nạp đề 25 câu trên Điện thoại, nhưng trên Máy tính lại nạp đề 30 câu.
+  2. Hai máy chạy hai bộ đề khác nhau thì `questionId` hoàn toàn khác nhau, việc chọn đáp án ở máy này không thể khớp với câu hỏi ở máy kia.
+- **Giải pháp 1-Click (Peer-to-Peer Full State Transfer)**:
+  1. **Nút `📲 Đồng bộ 2 máy` trên thanh điều hướng**:
+     - Cho phép người dùng bấm:
+       * `📤 Đẩy bộ đề máy này sang máy kia ngay`: Thiết bị hiện tại sẽ đóng gói toàn bộ danh sách câu hỏi, thứ tự, đáp án đã chọn và URL Google Drive gửi sang máy kia trong < 100ms.
+       * `📥 Kéo bộ đề từ máy kia về máy này`: Yêu cầu thiết bị kia truyền đề đang làm về máy này.
+  2. **Tự động bắt tay (Auto Peer Handshake)**:
+     - Khi một máy mới kết nối kênh, nếu phát hiện số lượng câu hỏi khác nhau (ví dụ 25 câu vs 30 câu), hệ thống sẽ bật thông báo nổi có nút `[Đồng bộ ngay]`.
+  3. **Đồng bộ lật câu hỏi song song (Follow Navigation)**:
+     - Tùy chọn `🔗 Tự động lật câu hỏi theo máy kia` (mặc định BẬT): Khi chuyển câu trên điện thoại, màn hình máy tính tự động lật sang đúng câu đó để người dùng theo dõi tiện lợi.
