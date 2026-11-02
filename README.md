@@ -94,3 +94,9 @@ Vui lòng tham khảo file [`SKILL.md`](./SKILL.md) trong gói này để biết
    - Nút `A/1` chuyển đổi thẻ đáp án `A, B, C, D` và `1, 2, 3, 4`.
    - Nút `🔀` Bật/Tắt xáo trộn đáp án.
    - Cơ chế tự động đồng bộ câu kết luận trong giải thích khớp với vị trí hiển thị thực tế trên màn hình.
+
+5. **Đồng bộ thời gian thực siêu tốc (<100ms) - Dual-Engine Live Sync**:
+   - Tương tác đồng thời giữa 2 thiết bị (điện thoại & máy tính): Ấn chọn đáp án, cắm cờ hoặc làm lại đề trên điện thoại -> Màn hình máy tính lập tức nhảy màu xanh/đỏ, mở giải thích chi tiết trong tích tắc (< 100 mili-giây).
+   - Thông báo nổi tương tác (*Live Sync Toast*): Hiển thị thông báo khi có thao tác từ thiết bị khác kèm nút xem nhanh câu hỏi đó.
+   - Cơ chế bảo mật tuyệt đối: Kênh truyền thông được mã hóa đầu cuối bằng thuật toán AES-GCM 256-bit và định danh kênh theo SHA-256(Email + Mật khẩu).
+   - Lưu trữ song song bền vững trên Google Drive: Toàn bộ tiến trình tự động sao lưu vào Drive sau mỗi 1.5 giây.

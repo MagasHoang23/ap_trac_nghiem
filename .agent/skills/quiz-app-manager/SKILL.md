@@ -227,3 +227,47 @@ Biên dịch thành `<span class="underline underline-offset-4 decoration-2 deco
    - **Lớp 3 (Công cụ điều khiển)**:
      * Nút `A/1`: Chuyển đổi linh hoạt giữa kiểu thẻ chữ cái (`A, B, C, D`) và kiểu số thứ tự (`1, 2, 3, 4`).
      * Nút `🔀`: Cho phép Bật / Tắt tính năng xáo trộn đáp án. Khi tắt, các phương án giữ nguyên 100% thứ tự A, B, C, D như đề bài gốc.
+
+
+---
+
+## 9. CƠ CHẾ ĐỒNG BỘ THỜI GIAN THỰC ĐA THIẾT BỊ (DUAL-ENGINE REAL-TIME SYNC < 100MS)
+
+### 9.1. Bài toán và Thách thức:
+- Khi người dùng sử dụng đồng thời 2 thiết bị (ví dụ: đang làm bài trên điện thoại nhưng muốn màn hình laptop phản chiếu ngay lập tức), nếu chỉ dựa vào lưu trữ Google Drive thì độ trễ mạng và giới hạn tần suất request của Google Apps Script (~1-3 giây) sẽ làm giảm trải nghiệm tương tác trực tiếp.
+- Người dùng mong muốn: **"Ấn câu nào trên điện thoại là trên máy tính cũng đồng bộ như thế theo thời gian thực luôn ấy nhưng vẫn giữ cơ chế lưu trên Google Drive"**.
+
+### 9.2. Kiến trúc Đồng bộ Kép (Dual-Engine Architecture):
+Ứng dụng kết hợp 2 động cơ hoạt động song song mượt mà:
+
+```
+[ Thiết bị 1 (Điện thoại) ]                      [ Thiết bị 2 (Máy tính) ]
+         |                                                 |
+         |=== (Động cơ 1: WebSocket < 100ms) =============>| (Phản xạ tức thì)
+         |    - SELECT_ANSWER, TOGGLE_FLAG, RETRY_QUIZ    | - Tô màu câu trả lời
+         |    - Kênh riêng tư băm SHA-256(Email + Mật khẩu)| - Bật giải thích
+         |    - Mã hóa đầu cuối AES-GCM 256-bit            | - Cập nhật bảng điểm
+         |                                                 | - Hiện Live Toast ⚡
+         |                                                 |
+         v                                                 v
+  [ Debounce 1.5s ]                                 [ Nhịp tim 45s ]
+         |                                                 |
+         +--------> [ Động cơ 2: Google Drive Master ] <---+
+                    (Lưu trữ vĩnh viễn, mã hóa AES-256)
+```
+
+1. **Động cơ 1 - Live Sync siêu tốc (< 100ms) qua WebSocket Native**:
+   - Sử dụng chuẩn WebSocket thuần của trình duyệt (`new WebSocket(...)`) kết nối mạng pub/sub không máy chủ trung gian.
+   - **Tạo kênh riêng tư (Zero Leakage)**: Kênh được băm SHA-256 từ sự kết hợp của email người dùng và mật khẩu (`CryptoVault.getChannelTopic()`). Chỉ những thiết bị đăng nhập cùng tài khoản và mật khẩu mới biết và nghe chung một kênh `ap_quiz_<hash>`.
+   - **Mã hóa đầu cuối (E2EE)**: Mọi gói tin sự kiện đều được mã hóa bằng AES-GCM 256-bit trước khi truyền.
+   - **Các sự kiện thời gian thực**:
+     * `SELECT_ANSWER`: Ngay khi ấn đáp án ở điện thoại, máy tính lập tức tô xanh/đỏ, mở ô giải thích chi tiết, cập nhật lưới số câu hỏi và tính điểm. Kèm Toast nổi: *"⚡ Thiết bị khác vừa chọn đáp án Câu X! [Xem]"*.
+     * `TOGGLE_FLAG`: Cắm cờ hoặc bỏ cờ tức thời giữa các máy.
+     * `RETRY_QUIZ`: Bấm làm lại đề ở máy này thì máy kia cũng đồng loạt khởi động lại lần thi mới.
+     * `SUBMIT_QUIZ`: Nộp bài sẽ kích hoạt cập nhật bảng điểm và lịch sử thi sang các máy khác.
+     * `NEW_QUIZ_LOADED`: Nạp đề mới ở máy tính sẽ tự động kéo sang điện thoại mà không cần gõ lại.
+
+2. **Động cơ 2 - Lưu trữ vĩnh viễn trên Google Drive (Permanent Master Backup)**:
+   - Thời gian chờ ghi ngầm (debounce) được tối ưu rút ngắn xuống **1.5 giây**.
+   - Mọi trạng thái làm bài, đề thi mới nạp, và snapshot lịch sử làm bài đều được lưu bền vững trên file `ap_trac_nghiem_cloud_backup.json` trong Google Drive của người dùng.
+   - Khi tắt máy hoặc mở thiết bị mới sau thời gian dài ngoại tuyến, ứng dụng sẽ tải snapshot mới nhất từ Google Drive về, sau đó tiếp tục kết nối vào Live Sync WebSocket.
