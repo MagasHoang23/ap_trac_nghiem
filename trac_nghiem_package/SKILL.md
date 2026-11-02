@@ -89,46 +89,78 @@ Trong modal "Thiết lập đề thi", người dùng có sẵn nút **🤖 Sao 
 ```text
 Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
 
-⚠️ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
+⚡ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
 1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick ```text ... ```) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
 
 2. CẤM TRÍCH DẪN RÁC: TUYỆT ĐỐI KHÔNG chèn các thẻ trích dẫn tài liệu như [cite: 1], [citation: 1], [source: 1], [1] vào trong đề bài hay phần giải thích.
 
 3. QUY TẮC CHỖ TRỐNG ĐIỀN TỪ: Với các câu hỏi điền từ vào chỗ trống, hãy dùng 4 hoặc 5 dấu gạch dưới (Ví dụ: "Men make _____ house and women make _____ home").
 
-4. QUY TẮC IN ĐẬM VÀ IN NGHIÊNG:
-   - Để in đậm: CHỈ DÙNG **từ khóa** (KHÔNG dùng 2 dấu gạch dưới __ để tránh lỗi nuốt chỗ trống điền từ).
-   - Để in nghiêng: CHỈ DÙNG *từ khóa*.
+4. QUY TẮC IN ĐẬM, IN NGHIÊNG VÀ GẠCH CHÂN:
+   - In đậm: CHỈ DÙNG **từ khóa** hoặc [b]từ khóa[/b] (KHÔNG dùng 2 dấu gạch dưới __ để tránh lỗi nuốt chỗ trống điền từ).
+   - In nghiêng: CHỈ DÙNG *từ khóa* hoặc [i]từ khóa[/i].
+   - Gạch chân: DÙNG <u>từ khóa</u> hoặc ++từ khóa++ hoặc [u]từ khóa[/u] (rất cần thiết cho các câu hỏi phát âm, trọng âm, tìm lỗi sai gạch chân, hoặc từ đồng nghĩa/trái nghĩa).
 
-5. Cấu trúc mỗi câu hỏi gồm:
-   - Dòng tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, *in nghiêng*, `code`, [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh]).
-   - Các phương án: A., B., C., D. ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: B. Đáp án này đúng*).
+5. 🤖 QUY TẮC ĐỒNG BỘ GIẢI THÍCH (CƠ CHẾ ĐÁNH DẤU MARKER CHỐNG XÁO TRỘN ĐÁP ÁN):
+   Vì hệ thống ứng dụng sẽ TỰ ĐỘNG XÁO TRỘN NGẪU NHIÊN thứ tự các lựa chọn đáp án (A, B, C, D) mỗi khi làm bài:
+   Để lời giải luôn chính xác tuyệt đối với vị trí nút thực tế trên màn hình của học sinh, BẮT BUỘC dùng cơ chế thẻ đánh dấu (Markers) như sau:
+
+   a) Khi kết luận đáp án đúng ở cuối bài giải:
+      - BẮT BUỘC dùng thẻ: [DAP_AN_DUNG]
+      - Cú pháp chuẩn:
+        -> Do đó, đáp án đúng là: [DAP_AN_DUNG] **[Nội dung đáp án đúng]**.
+      - (Hệ thống sẽ tự động biến [DAP_AN_DUNG] thành chữ cái nút thực tế trên màn hình, ví dụ [A], [B], [C] hoặc [D]).
+
+   b) Khi phân tích chi tiết từng lựa chọn (A, B, C, D):
+      - Đặt dưới tiêu đề: "Phân tích các phương án:"
+      - Dùng cấu trúc thẻ cho từng phương án ban đầu:
+        - [OPT:A]: <Phân tích lựa chọn A>
+        - [OPT:B]: <Phân tích lựa chọn B>
+        - [OPT:C]: <Phân tích lựa chọn C>
+        - [OPT:D]: <Phân tích lựa chọn D>
+      - (Hệ thống sẽ TỰ ĐỘNG SẮP XẾP LẠI 4 dòng phân tích này theo đúng thứ tự các nút xuất hiện trên màn hình học sinh, tự động gắn nhãn [A], [B], [C], [D] thực tế và gắn icon ✅ / ❌).
+
+   c) Khi nhắc đến đáp án trong đoạn văn phân tích:
+      - Dùng các thẻ: [DA_A], [DA_B], [DA_C], [DA_D]
+      - Ví dụ:
+        * "Do đó loại [DA_B] vì bị đảo ngữ; loại [DA_D] vì chia sai thì..."
+        * "Phương án [DA_C] đúng cấu trúc câu điều kiện..."
+      - TUYỆT ĐỐI KHÔNG ghi cộc lốc chữ cái cố định như "loại B", "chọn A" vì khi bị xáo trộn vị trí sẽ bị sai lệch.
+
+6. Cấu trúc mỗi câu hỏi gồm:
+   - Tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, <u>gạch chân</u>, *in nghiêng*, `code`...).
+   - Các phương án: A., B., C., D. (ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU, ví dụ: B. maintain*).
    - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
 
-6. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
+7. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
    - Tiêu đề mục: Dùng # Tiêu đề lớn, ## Tiêu đề vừa, ### Tiêu đề nhỏ.
-   - Từ khóa cốt lõi: Dùng **in đậm**.
+   - Từ khóa cốt lõi: Dùng **in đậm**, <u>gạch chân</u>.
    - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng.
    - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
-   - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận (Ví dụ: -> Do đó đáp án B đúng).
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
    - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
 
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 ```text
-Câu 1: It is generally believed that "Men make _____ house and women make _____ home".
-A. a / a*
-B. the / the
-C. a / the
-D. the / an
+Câu 1: It is not easy to _____ our beauty when we get older and older.
+A. develop
+B. maintain*
+C. gain
+D. collect
 
 Giải thích:
-# Phân tích ngữ pháp & Thành ngữ:
-- Thành ngữ chuẩn tiếng Anh: **"Men make a house and women make a home"** (Đàn ông xây nhà, đàn bà xây tổ ấm).
-- Cả **house** và **home** đều là danh từ đếm được số ít mang nghĩa biểu trưng tổng quát:
-  * Nên sử dụng mạo từ bất định **a**.
-> ==Ghi nhớ:== Cụm *make a house & make a home* là cặp quán ngữ luôn đi cùng nhau.
--> Do đó, đáp án đúng là **A**.
+# Cấu trúc câu với tính từ & Ngữ nghĩa:
+- Cấu trúc: S + be + not easy + to V-inf (thật không dễ để làm gì).
+- Câu gốc diễn tả việc giữ gìn, bảo tồn vẻ đẹp nhan sắc theo thời gian.
+- Do đó loại [DA_A] và [DA_D] vì không mang nghĩa phù hợp với nhan sắc.
+
+Phân tích các phương án:
+- [OPT:A]: develop (phát triển) không mang nghĩa bảo tồn hay giữ gìn nhan sắc.
+- [OPT:B]: maintain (duy trì, giữ gìn) hoàn toàn chính xác với cụm 'maintain our beauty'.
+- [OPT:C]: gain (đạt được, tăng lên) thường đi với weight, experience, kiến thức.
+- [OPT:D]: collect (thu thập, sưu tầm) dùng cho đồ vật, không dùng cho nhan sắc.
+
+-> Do đó, đáp án đúng là: [DAP_AN_DUNG] **maintain**.
 ```
 
 Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block ```text ... ``` duy nhất:

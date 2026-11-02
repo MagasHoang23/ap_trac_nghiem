@@ -962,7 +962,7 @@
                 question: "Cho các nhận định sau về **Hệ Mặt Trời**:\n1. Mặt Trời là một ngôi sao ở trung tâm.\n2. Trái Đất là hành tinh thứ 3 tính từ Mặt Trời.\n3. Sao Hỏa có màu xanh lá cây do có nhiều thực vật bao phủ.\nHỏi có bao nhiêu nhận định **[do]ĐÚNG[/do]**?",
                 options: ["0", "1", "2*", "3"],
                 correctAnswer: "2*",
-                explanation: "# Phân tích chi tiết từng nhận định:\n- Nhận định 1: **ĐÚNG**. Mặt Trời là ngôi sao lùn vàng nằm ở trung tâm Hệ Mặt Trời.\n- Nhận định 2: **ĐÚNG**. Thứ tự từ Mặt Trời: Thủy tinh, Kim tinh, **Trái Đất**, Hỏa tinh...\n- Nhận định 3: **SAI**.\n  * Sao Hỏa có màu đỏ cam do bề mặt chứa lượng lớn sắt(III) oxit (rỉ sét).\n  * Khí quyển Sao Hỏa rất mỏng và cực kỳ khô cằn, hoàn toàn không có thực vật.\n> ==Kết luận:== Có đúng **2** nhận định chính xác (nhận định 1 và 2).\n-> Do đó, đáp án đúng là **C (2)**."
+                explanation: "# Phân tích chi tiết từng nhận định:\n- Nhận định 1: **ĐÚNG**. Mặt Trời là ngôi sao lùn vàng nằm ở trung tâm Hệ Mặt Trời.\n- Nhận định 2: **ĐÚNG**. Thứ tự từ Mặt Trời: Thủy tinh, Kim tinh, **Trái Đất**, Hỏa tinh...\n- Nhận định 3: **SAI**.\n  * Sao Hỏa có màu đỏ cam do bề mặt chứa lượng lớn sắt(III) oxit (rỉ sét).\n  * Khí quyển Sao Hỏa rất mỏng và cực kỳ khô cằn, hoàn toàn không có thực vật.\n> ==Kết luận:== Có đúng **2** nhận định chính xác (nhận định 1 và 2).\n-> Do đó, đáp án đúng là: [DAP_AN_DUNG] **2**."
             },
             {
                 id: "q2_default",
@@ -2920,10 +2920,8 @@ function doGet(e) {
                 // --- HIỂN THỊ CÂU HỎI (BIÊN DỊCH ĐỀ BÀI VÀ GIẢI THÍCH ĐỊNH DẠNG PHONG PHÚ) ---
         
         // =========================================================================
-        // BỘ ĐỐI CHIẾU VÀ TÁI SẮP XẾP LỜI GIẢI THEO THỨ TỰ ĐÁP ÁN XÁO TRỘN
-        // =========================================================================
-                // =========================================================================
         // BỘ ĐỐI CHIẾU VÀ TÁI SẮP XẾP LỜI GIẢI THEO THỨ TỰ ĐÁP ÁN XÁO TRỘN TOÀN DIỆN
+        // HỖ TRỢ CƠ CHẾ ĐÁNH DẤU THÔNG MINH (MARKERS: [OPT:A], [DA_A], [DAP_AN_DUNG])
         // =========================================================================
         function reconcileExplanation(question, currentBadgeStyle) {
             if (!question) return "Không có giải thích chi tiết.";
@@ -2936,15 +2934,14 @@ function doGet(e) {
 
             // 1. Tạo bảng ánh xạ:
             // origLetter ('A', 'B', 'C', 'D') -> newBadge ('A', 'B', 'C', 'D' hoặc '1', '2', '3', '4')
-            // optionText -> newBadge & newIdx
+            // origLetter -> newIdx (vị trí nút trên màn hình)
             const origToNewBadge = {};
-            const origToNewLetter = {};
+            const origToNewIdx = {};
             const textToNewBadge = {};
             const textToNewIdx = {};
 
             currOptions.forEach((optText, newIdx) => {
                 const newBadge = currentBadgeStyle === 'numbers' ? String(newIdx + 1) : (optionLetters[newIdx] || String(newIdx + 1));
-                const newLetter = optionLetters[newIdx] || String(newIdx + 1);
                 const normText = optText.trim().toLowerCase();
                 textToNewBadge[normText] = newBadge;
                 textToNewIdx[normText] = newIdx;
@@ -2953,7 +2950,7 @@ function doGet(e) {
                 if (origIdx !== -1) {
                     const origLetter = optionLetters[origIdx];
                     origToNewBadge[origLetter] = newBadge;
-                    origToNewLetter[origLetter] = newLetter;
+                    origToNewIdx[origLetter] = newIdx;
                 }
             });
 
@@ -2979,7 +2976,8 @@ function doGet(e) {
                     if (expl && expl.trim()) {
                         const isThisCorrect = (optText === correctAnswer);
                         const icon = isThisCorrect ? "✅" : "❌";
-                        specificBlocks.push(`  - ${icon} **[${newBadge}] ${escapeHtml(optText)}**: ${expl.trim()}`);
+                        // Chú ý: Trả về văn bản thô markdown, không escapeHtml ở đây để tránh lỗi double escape &#039;
+                        specificBlocks.push(`  - ${icon} **[${newBadge}] ${optText}**: ${expl.trim()}`);
                     }
                 });
             }
@@ -2987,24 +2985,63 @@ function doGet(e) {
             // 3. Phân tích lời giải chung (general explanation)
             const rawGeneralExpl = (question.explanation || "").trim();
             if (!rawGeneralExpl && specificBlocks.length > 0) {
-                return specificBlocks.join('\n') + `\n\n-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`;
+                return specificBlocks.join('\n') + `\n\n-> Do đó, đáp án đúng là: **[${correctBadge}] ${correctAnswer}**`;
             }
             if (!rawGeneralExpl && specificBlocks.length === 0) {
-                return `-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`;
+                return `-> Do đó, đáp án đúng là: **[${correctBadge}] ${correctAnswer}**`;
             }
 
             const lines = rawGeneralExpl.replace(/\r\n/g, '\n').split('\n');
             const headerLines = [];
             const optBlocks = {}; // newIdx -> array of lines
-            const conclusionLine = `-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`;
+            const conclusionLine = `-> Do đó, đáp án đúng là: **[${correctBadge}] ${correctAnswer}**`;
 
-            // Regex nhận diện chữ cái đầu dòng (VD: "- A: develop...", "A. ...", "Xét đáp án A:...")
-            const optLetterRegex = /^(?:\s*[-*+•\d\.]*\s*)?(?:xét\s+)?(?:đáp án|phương án|lựa chọn|câu)?\s*[*_]*([A-Ha-h])[*_]*\s*[:\.\)-]\s*(.*)/i;
-            
-            // Regex câu kết luận (bắt bất kỳ dạng nào: "đáp án đúng là...", "kết luận...", "(Đáp án B)")
-            const conclRegex = /(?:->|=>|➜)?\s*(?:Do đó,?\s*)?(?:đáp án đúng\s+(?:là\s+)?|chọn\s+đáp án\s+|kết luận:?\s*(?:đáp án\s+)?)/i;
+            // Regex thông minh 1: Bắt thẻ Marker [OPT:A], [DA_A], [DAP_AN_A]
+            const markerOptRegex = /^(?:\s*[-*+•\d\.]*\s*)?\[(?:OPT|DA|DAP_AN)[:_]?([A-Ha-h])\]\s*[:\.-]?\s*(.*)/i;
+
+            // Regex fallback 2: Bắt chữ cái đầu dòng truyền thống (VD: "- A: develop...", "A. ...", "Xét đáp án A:...")
+            // TUYỆT ĐỐI KHÔNG chứa từ "câu" ở đây để không bao giờ bắt nhầm "Câu gốc", "Câu bị động"!
+            const fallbackLetterRegex = /^(?:\s*[-*+•\d\.]*\s*)?(?:xét\s+)?(?:đáp án|phương án|lựa chọn)?\s*[*_]*([A-Ha-h])[*_]*\s*[:\.\)-]\s+(.*)/i;
+
+            // Regex câu kết luận (bắt bất kỳ dạng kết luận cũ nào để thay thế bằng câu kết luận chuẩn hóa ở cuối)
+            const conclRegex = /^(?:->|=>|➜)?\s*(?:Do đó,?\s*)?(?:đáp án đúng\s+(?:là\s+)?|chọn\s+đáp án\s+|kết luận:?\s*(?:đáp án\s+)?)/i;
 
             let placeholderInserted = false;
+
+            // Hàm xử lý thay thế các thẻ marker inline an toàn và chuẩn xác
+            function replaceInlineMarkers(str) {
+                if (!str) return '';
+                let res = str;
+                // Thẻ kết luận: [DAP_AN_DUNG], [DA_DUNG], [CORRECT_ANSWER] -> **[Badge]**
+                res = res.replace(/\[(?:DAP_AN_DUNG|DA_DUNG|CORRECT_ANSWER)\]/gi, `**[${correctBadge}]**`);
+                // Thẻ phương án: [DA_A], [OPT:B], [DA:C], [OPT_D], [DAP_AN_A] -> **[NewBadge]**
+                res = res.replace(/\[(?:DA|OPT|DAP_AN)[:_]?([A-Ha-h])\]/gi, (match, letter) => {
+                    const origL = letter.toUpperCase();
+                    const newB = origToNewBadge[origL] || origL;
+                    return `**[${newB}]**`;
+                });
+                // Bắt dạng đóng mở ngoặc rõ ràng: (Đáp án B), (phương án C)
+                res = res.replace(/\(\s*(?:đáp án|phương án)\s*([A-Ha-h])\s*\)/gi, (match, letter) => {
+                    const origL = letter.toUpperCase();
+                    const newB = origToNewBadge[origL] || origL;
+                    return `**[${newB}]**`;
+                });
+                // Bắt dạng: B ( what is marriage ) -> [A] (what is marriage)
+                res = res.replace(/(?:^|\s)([A-Ha-h])\s*\(\s*([^)]+)\s*\)/g, (match, letter, inner) => {
+                    const cleanInner = inner.trim().toLowerCase();
+                    let matchedBadge = null;
+                    for (const [optT, b] of Object.entries(textToNewBadge)) {
+                        if (optT.includes(cleanInner) || cleanInner.includes(optT)) {
+                            matchedBadge = b;
+                            break;
+                        }
+                    }
+                    const origL = letter.toUpperCase();
+                    const newB = matchedBadge || origToNewBadge[origL] || letter;
+                    return ` **[${newB}]** (${inner})`;
+                });
+                return res;
+            }
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
@@ -3016,16 +3053,16 @@ function doGet(e) {
                     continue;
                 }
 
-                // Trường hợp 1: Dòng bắt đầu bằng chữ cái phương án (VD: "- A: develop...")
-                const optLetMatch = stripped.match(optLetterRegex);
-                if (optLetMatch) {
-                    const origLet = optLetMatch[1].toUpperCase();
-                    if (origToNewLetter[origLet]) {
-                        const newIdx = optionLetters.indexOf(origToNewLetter[origLet]);
-                        const badge = origToNewBadge[origLet];
-                        const body = optLetMatch[2] ? optLetMatch[2].trim() : "";
+                // ƯU TIÊN 1: Thẻ Marker theo quy chuẩn mới: [OPT:A], [DA_A], [DAP_AN_A]
+                const markerMatch = stripped.match(markerOptRegex);
+                if (markerMatch) {
+                    const origL = markerMatch[1].toUpperCase();
+                    const newIdx = origToNewIdx[origL];
+                    if (newIdx !== undefined) {
+                        const badge = origToNewBadge[origL];
                         const isThisCorrect = (newIdx === correctIdx);
                         const icon = isThisCorrect ? "✅" : "❌";
+                        const body = replaceInlineMarkers(markerMatch[2] ? markerMatch[2].trim() : "");
 
                         if (!optBlocks[newIdx]) optBlocks[newIdx] = [];
                         optBlocks[newIdx].push(`  - ${icon} **[${badge}]**: ${body}`);
@@ -3033,7 +3070,24 @@ function doGet(e) {
                     }
                 }
 
-                // Trường hợp 2: Dòng là gạch đầu dòng phân tích nội dung phương án (VD: "* He was seen drink and drive: ...")
+                // ƯU TIÊN 2: Dòng bắt đầu bằng chữ cái phương án truyền thống (VD: "- A: develop...")
+                const fbMatch = stripped.match(fallbackLetterRegex);
+                if (fbMatch) {
+                    const origL = fbMatch[1].toUpperCase();
+                    const newIdx = origToNewIdx[origL];
+                    if (newIdx !== undefined) {
+                        const badge = origToNewBadge[origL];
+                        const isThisCorrect = (newIdx === correctIdx);
+                        const icon = isThisCorrect ? "✅" : "❌";
+                        const body = replaceInlineMarkers(fbMatch[2] ? fbMatch[2].trim() : "");
+
+                        if (!optBlocks[newIdx]) optBlocks[newIdx] = [];
+                        optBlocks[newIdx].push(`  - ${icon} **[${badge}]**: ${body}`);
+                        continue;
+                    }
+                }
+
+                // ƯU TIÊN 3: Gạch đầu dòng phân tích nội dung phương án (VD: "* He was seen drink and drive: ...")
                 const isBullet = /^[-*+•\d\.]/.test(stripped);
                 let matchedOptIdx = null;
 
@@ -3046,7 +3100,7 @@ function doGet(e) {
                 }
 
                 const hasAnalysisKeyword = /loại|chuẩn xác|đúng|sai|bị đảo ngữ|thì|giới từ|cấu trúc|nguyên mẫu|phân từ|không phù hợp|không đi với/i.test(stripped) || stripped.includes(':');
-                if (isBullet && matchedOptIdx !== null && hasAnalysisKeyword) {
+                if (isBullet && matchedOptIdx !== null && hasAnalysisKeyword && !optBlocks[matchedOptIdx]) {
                     const badge = currentBadgeStyle === 'numbers' ? String(matchedOptIdx + 1) : (optionLetters[matchedOptIdx] || String(matchedOptIdx + 1));
                     const isThisCorrect = (matchedOptIdx === correctIdx);
                     const icon = isThisCorrect ? "✅" : "❌";
@@ -3054,7 +3108,6 @@ function doGet(e) {
                     let cleanBody = stripped.replace(/^[-*+•\d\.]*\s*/, '');
                     const optStr = currOptions[matchedOptIdx];
                     
-                    // Thay thế tên phương án bằng badge nổi bật nếu chưa gắn
                     const optRegex = new RegExp(escapeRegExp(optStr), 'i');
                     if (optRegex.test(cleanBody)) {
                         cleanBody = cleanBody.replace(optRegex, `**[${badge}] ${optStr}**`);
@@ -3063,39 +3116,12 @@ function doGet(e) {
                     }
 
                     if (!optBlocks[matchedOptIdx]) optBlocks[matchedOptIdx] = [];
-                    optBlocks[matchedOptIdx].push(`  - ${icon} ${cleanBody}`);
+                    optBlocks[matchedOptIdx].push(`  - ${icon} ${replaceInlineMarkers(cleanBody)}`);
                     continue;
                 }
 
-                // Trường hợp 3: Dòng văn bản bình thường -> Thay thế các tham chiếu chữ cái thông minh
-                let workingLine = line;
-
-                // 3a. B ( what is marriage ) -> [A] (what is marriage)
-                workingLine = workingLine.replace(/\b([A-Ha-h])\s*\(\s*([^)]+)\s*\)/g, (match, letter, inner) => {
-                    const cleanInner = inner.trim().toLowerCase();
-                    let matchedBadge = null;
-                    for (const [optT, b] of Object.entries(textToNewBadge)) {
-                        if (optT.includes(cleanInner) || cleanInner.includes(optT)) {
-                            matchedBadge = b;
-                            break;
-                        }
-                    }
-                    const newB = matchedBadge || origToNewBadge[letter.toUpperCase()] || letter;
-                    return `**[${newB}]** (${inner})`;
-                });
-
-                // 3b. Các từ ngữ chỉ định: "đáp án B", "loại C", "và D", "hoặc A"
-                workingLine = workingLine.replace(/(\b(?:đáp án|phương án|lựa chọn|câu|loại|chọn|xét|mục|và|hoặc|hay)(?:\s+ngay)?(?:\s+đáp án|\s+phương án|\s+câu)?\s+)[*_]*([A-Ha-h])\b/gi, (match, prefix, letter) => {
-                    const newB = origToNewBadge[letter.toUpperCase()] || letter;
-                    return `${prefix}**[${newB}]**`;
-                });
-
-                // 3c. Đóng mở ngoặc đơn chỉ đáp án: "(Đáp án B)", "(phương án C)"
-                workingLine = workingLine.replace(/\(\s*(?:đáp án|phương án|câu)\s*([A-Ha-h])\s*\)/gi, (match, letter) => {
-                    const newB = origToNewBadge[letter.toUpperCase()] || letter;
-                    return `**[${newB}]**`;
-                });
-
+                // Trường hợp 4: Dòng văn bản bình thường -> Thay thế các marker thông minh
+                let workingLine = replaceInlineMarkers(line);
                 headerLines.push(workingLine);
 
                 // Nếu gặp dòng tiêu đề phân tích phương án (VD: "Phân tích các phương án:")
@@ -3140,7 +3166,7 @@ function doGet(e) {
                 }
             }
 
-            // Gắn câu kết luận chuẩn xác ở cuối cùng
+            // Gắn câu kết luận chuẩn xác ở cuối cùng (không escapeHtml để tránh lỗi double escape &#039;)
             finalLines.push("");
             finalLines.push(conclusionLine);
 
@@ -3259,8 +3285,15 @@ function doGet(e) {
 
                         // 3. HIỆN GIẢI THÍCH RIÊNG TRONG Ô BẠN CHỌN SAI (NẾU CÓ)
                         if (isSelected && !isCorrectOption) {
-                            const char = (optionLetters[optIdx] || '').toLowerCase();
-                            const specificExplForWrong = question.specificExplanations && (question.specificExplanations[char] || question.specificExplanations[optionText]);
+                            const origIdx = (question.originalOptions && question.originalOptions.length === question.options.length)
+                                ? question.originalOptions.indexOf(optionText)
+                                : optIdx;
+                            const origChar = (optionLetters[origIdx] || '').toLowerCase();
+                            const specificExplForWrong = question.specificExplanations && (
+                                question.specificExplanations[optionText] || 
+                                question.specificExplanations[optionText.trim().toLowerCase()] ||
+                                (origIdx !== -1 ? question.specificExplanations[origChar] : null)
+                            );
                             if (specificExplForWrong) {
                                 const wrongExplDiv = document.createElement('div');
                                 wrongExplDiv.classList.add('explanation-box-wrong');
@@ -3698,7 +3731,7 @@ function doGet(e) {
         // PROMPT MẪU CHUẨN GỬI CHO AI (ChatGPT, Claude, Gemini, DeepSeek...)
         const aiPromptTemplate = `Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
 
-⚠️ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
+⚡ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
 1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick \`\`\`text ... \`\`\`) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
 
 2. CẤM TRÍCH DẪN RÁC: TUYỆT ĐỐI KHÔNG chèn các thẻ trích dẫn tài liệu như [cite: 1], [citation: 1], [source: 1], [1] vào trong đề bài hay phần giải thích.
@@ -3710,17 +3743,35 @@ function doGet(e) {
    - In nghiêng: CHỈ DÙNG *từ khóa* hoặc [i]từ khóa[/i].
    - Gạch chân: DÙNG <u>từ khóa</u> hoặc ++từ khóa++ hoặc [u]từ khóa[/u] (rất cần thiết cho các câu hỏi phát âm, trọng âm, tìm lỗi sai gạch chân, hoặc từ đồng nghĩa/trái nghĩa).
 
-5. ⚠️ QUY TẮC ĐỒNG BỘ GIẢI THÍCH KHI ỨNG DỤNG XÁO TRỘN ĐÁP ÁN:
-   Vì ứng dụng làm bài có tính năng tự động xáo trộn ngẫu nhiên vị trí các lựa chọn đáp án:
-   - Trong phần "Giải thích:": TUYỆT ĐỐI KHÔNG được chỉ kết luận cộc lốc kiểu "Do đó đáp án đúng là A" hay "loại B và D".
-   - BẮT BUỘC PHẢI LUÔN GHI KÈM NỘI DUNG CHỮ CỦA ĐÁP ÁN!
-     * Ví dụ đúng khi kết luận: "-> Do đó, đáp án đúng là: what marriage is (hoặc (A) what marriage is)".
-     * Ví dụ đúng khi loại trừ: "Loại phương án (what is marriage) vì bị đảo ngữ; loại phương án (what was marriage) vì chia sai thì...".
-   - Bằng cách luôn ghi rõ nội dung chữ của đáp án trong giải thích, dù ứng dụng có xáo trộn thứ tự đáp án thành A, B, C hay D thì lời giải vẫn luôn chính xác và đồng nhất 100%!
+5. 🤖 QUY TẮC ĐỒNG BỘ GIẢI THÍCH (CƠ CHẾ ĐÁNH DẤU MARKER CHỐNG XÁO TRỘN ĐÁP ÁN):
+   Vì hệ thống ứng dụng sẽ TỰ ĐỘNG XÁO TRỘN NGẪU NHIÊN thứ tự các lựa chọn đáp án (A, B, C, D) mỗi khi làm bài:
+   Để lời giải luôn chính xác tuyệt đối với vị trí nút thực tế trên màn hình của học sinh, BẮT BUỘC dùng cơ chế thẻ đánh dấu (Markers) như sau:
+
+   a) Khi kết luận đáp án đúng ở cuối bài giải:
+      - BẮT BUỘC dùng thẻ: [DAP_AN_DUNG]
+      - Cú pháp chuẩn:
+        -> Do đó, đáp án đúng là: [DAP_AN_DUNG] **[Nội dung đáp án đúng]**.
+      - (Hệ thống sẽ tự động biến [DAP_AN_DUNG] thành chữ cái nút thực tế trên màn hình, ví dụ [A], [B], [C] hoặc [D]).
+
+   b) Khi phân tích chi tiết từng lựa chọn (A, B, C, D):
+      - Đặt dưới tiêu đề: "Phân tích các phương án:"
+      - Dùng cấu trúc thẻ cho từng phương án ban đầu:
+        - [OPT:A]: <Phân tích lựa chọn A>
+        - [OPT:B]: <Phân tích lựa chọn B>
+        - [OPT:C]: <Phân tích lựa chọn C>
+        - [OPT:D]: <Phân tích lựa chọn D>
+      - (Hệ thống sẽ TỰ ĐỘNG SẮP XẾP LẠI 4 dòng phân tích này theo đúng thứ tự các nút xuất hiện trên màn hình học sinh, tự động gắn nhãn [A], [B], [C], [D] thực tế và gắn icon ✅ / ❌).
+
+   c) Khi nhắc đến đáp án trong đoạn văn phân tích:
+      - Dùng các thẻ: [DA_A], [DA_B], [DA_C], [DA_D]
+      - Ví dụ:
+        * "Do đó loại [DA_B] vì bị đảo ngữ; loại [DA_D] vì chia sai thì..."
+        * "Phương án [DA_C] đúng cấu trúc câu điều kiện..."
+      - TUYỆT ĐỐI KHÔNG ghi cộc lốc chữ cái cố định như "loại B", "chọn A" vì khi bị xáo trộn vị trí sẽ bị sai lệch.
 
 6. Cấu trúc mỗi câu hỏi gồm:
    - Tiêu đề câu: Câu 1: [Nội dung câu hỏi] (Có thể viết nhiều dòng, có thể dùng **in đậm**, <u>gạch chân</u>, *in nghiêng*, \`code\`...).
-   - Các phương án: A., B., C., D. (Hoặc A. (A) [nội dung]). ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU (Ví dụ: A. what marriage is*).
+   - Các phương án: A., B., C., D. (ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU, ví dụ: B. maintain*).
    - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
 
 7. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
@@ -3728,25 +3779,30 @@ function doGet(e) {
    - Từ khóa cốt lõi: Dùng **in đậm**, <u>gạch chân</u>.
    - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng.
    - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
-   - Mũi tên suy luận: Dùng -> hoặc => để chốt kết luận kèm nội dung đáp án (Ví dụ: -> Do đó, đáp án đúng là: **what marriage is**).
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
    - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
 
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 \`\`\`text
-Câu 1: It is generally believed that "Men make _____ house and women make _____ home".
-A. a / a*
-B. the / the
-C. a / the
-D. the / an
+Câu 1: It is not easy to _____ our beauty when we get older and older.
+A. develop
+B. maintain*
+C. gain
+D. collect
 
 Giải thích:
-# Phân tích ngữ pháp & Thành ngữ:
-- Thành ngữ chuẩn tiếng Anh: **"Men make a house and women make a home"** (Đàn ông xây nhà, đàn bà xây tổ ấm).
-- Cả **house** và **home** đều là danh từ đếm được số ít mang nghĩa biểu trưng tổng quát:
-  * Nên sử dụng mạo từ bất định **a**.
-> ==Ghi nhớ:== Cụm *make a house & make a home* là cặp quán ngữ luôn đi cùng nhau.
--> Do đó, đáp án đúng là: **a / a** (Đáp án A).
+# Cấu trúc câu với tính từ & Ngữ nghĩa:
+- Cấu trúc: S + be + not easy + to V-inf (thật không dễ để làm gì).
+- Câu gốc diễn tả việc giữ gìn, bảo tồn vẻ đẹp nhan sắc theo thời gian.
+- Do đó loại [DA_A] và [DA_D] vì không mang nghĩa phù hợp với nhan sắc.
+
+Phân tích các phương án:
+- [OPT:A]: develop (phát triển) không mang nghĩa bảo tồn hay giữ gìn nhan sắc.
+- [OPT:B]: maintain (duy trì, giữ gìn) hoàn toàn chính xác với cụm 'maintain our beauty'.
+- [OPT:C]: gain (đạt được, tăng lên) thường đi với weight, experience, kiến thức.
+- [OPT:D]: collect (thu thập, sưu tầm) dùng cho đồ vật, không dùng cho nhan sắc.
+
+-> Do đó, đáp án đúng là: [DAP_AN_DUNG] **maintain**.
 \`\`\`
 
 Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block \`\`\`text ... \`\`\` duy nhất:`;
@@ -3875,7 +3931,7 @@ Giải thích:
   * Sao Hỏa có màu đỏ cam do bề mặt chứa lượng lớn sắt(III) oxit (rỉ sét).
   * Khí quyển Sao Hỏa rất mỏng và cực kỳ khô cằn, hoàn toàn không có thực vật.
 > ==Kết luận:== Có đúng **2** nhận định chính xác (nhận định 1 và 2).
--> Do đó, đáp án đúng là **C (2)**.
+-> Do đó, đáp án đúng là: [DAP_AN_DUNG] **2**.
 
 Câu 2: Một hình tròn có bán kính [to]R = 5 cm[/to]. Diện tích [i](S)[/i] của hình tròn đó là bao nhiêu?
 A. 10π cm²
