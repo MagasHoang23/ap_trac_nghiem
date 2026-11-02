@@ -1146,7 +1146,14 @@
                 return bytes;
             },
 
+            _keyCache: new Map(),
+
             async deriveKey(password, saltUint8) {
+                const saltBase64 = this.bufferToBase64(saltUint8);
+                const cacheKey = `${password}:${saltBase64}`;
+                if (this._keyCache.has(cacheKey)) {
+                    return this._keyCache.get(cacheKey);
+                }
                 const enc = new TextEncoder();
                 const keyMaterial = await window.crypto.subtle.importKey(
                     "raw",
@@ -1155,7 +1162,7 @@
                     false,
                     ["deriveBits", "deriveKey"]
                 );
-                return await window.crypto.subtle.deriveKey(
+                const derivedKey = await window.crypto.subtle.deriveKey(
                     {
                         name: "PBKDF2",
                         salt: saltUint8,
@@ -1167,6 +1174,9 @@
                     false,
                     ["encrypt", "decrypt"]
                 );
+                if (this._keyCache.size > 50) this._keyCache.clear();
+                this._keyCache.set(cacheKey, derivedKey);
+                return derivedKey;
             },
 
             async computeAuthVerifier(account, password, saltUint8) {
@@ -1572,8 +1582,10 @@ function doGet(e) {
             topic: null,
             isConnected: false,
             reconnectTimer: null,
+            keepAliveTimer: null,
             followNavigation: true,
             _isRemoteNavigating: false,
+            _lastMsgTime: 0,
             deviceId: 'dev_' + Math.random().toString(36).substring(2, 9),
             lastActiveTimestamp: (function() {
                 try {
@@ -1610,10 +1622,12 @@ function doGet(e) {
 
                     this.ws.onopen = () => {
                         this.isConnected = true;
+                        this._lastMsgTime = Date.now();
                         console.log("⚡ Realtime Live Sync: Đã kết nối kênh thời gian thực:", this.topic);
                         CloudSyncManager.updateSyncBadge();
                         this.updatePeerModalUI();
-                        showLiveToast("⚡ Đã kích hoạt Live Sync (<100ms)!");
+                        this.startKeepAlive();
+                        showLiveToast("⚡ Đã kết nối Live Sync song song (<100ms)!");
 
                         // Bắt tay tự động: Gửi thông số phiên làm bài để 2 máy tự đối chiếu thời gian và bộ đề
                         this.broadcastHandshake();
@@ -1621,11 +1635,16 @@ function doGet(e) {
 
                     this.ws.onmessage = async (event) => {
                         try {
+                            this._lastMsgTime = Date.now();
                             const msgObj = JSON.parse(event.data);
+
+                            // Bỏ qua heartbeat ping
+                            if (msgObj.ping || (msgObj.message && msgObj.message.includes('"ping":true'))) return;
+
                             if (msgObj.event === 'message') {
                                 let rawText = msgObj.message;
 
-                                // FIX ĐẶC BIỆT: Khi gói tin lớn hơn 4KB, ntfy.sh tự chuyển sang file đính kèm (attachment)
+                                // Xử lý gói tin lớn tự động chuyển thành file đính kèm
                                 if (msgObj.attachment && msgObj.attachment.url) {
                                     try {
                                         const attachRes = await fetch(msgObj.attachment.url);
@@ -1638,7 +1657,6 @@ function doGet(e) {
                                 if (!rawText) return;
 
                                 const encryptedData = JSON.parse(rawText);
-                                // Bỏ qua nếu sự kiện do chính thiết bị này gửi đi
                                 if (encryptedData.deviceId === this.deviceId) return;
 
                                 const decryptedAction = await CryptoVault.decryptPayload(
@@ -1655,6 +1673,7 @@ function doGet(e) {
 
                     this.ws.onclose = () => {
                         this.isConnected = false;
+                        this.stopKeepAlive();
                         CloudSyncManager.updateSyncBadge();
                         this.updatePeerModalUI();
                         clearTimeout(this.reconnectTimer);
@@ -1662,7 +1681,7 @@ function doGet(e) {
                             if (CloudSyncManager.currentUser) {
                                 this.connect(CloudSyncManager.currentUser.email, CloudSyncManager.currentUser.password);
                             }
-                        }, 4000);
+                        }, 3500);
                     };
 
                     this.ws.onerror = (err) => {
@@ -1675,6 +1694,7 @@ function doGet(e) {
 
             disconnect() {
                 clearTimeout(this.reconnectTimer);
+                this.stopKeepAlive();
                 if (this.ws) {
                     try { this.ws.close(); } catch(e) {}
                     this.ws = null;
@@ -1682,6 +1702,29 @@ function doGet(e) {
                 this.isConnected = false;
                 CloudSyncManager.updateSyncBadge();
                 this.updatePeerModalUI();
+            },
+
+            startKeepAlive() {
+                this.stopKeepAlive();
+                this.keepAliveTimer = setInterval(() => {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.topic) {
+                        const idleTime = Date.now() - (this._lastMsgTime || 0);
+                        if (idleTime > 25000) {
+                            fetch(`https://ntfy.sh/${this.topic}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify({ ping: true, deviceId: this.deviceId })
+                            }).catch(() => {});
+                        }
+                    }
+                }, 20000);
+            },
+
+            stopKeepAlive() {
+                if (this.keepAliveTimer) {
+                    clearInterval(this.keepAliveTimer);
+                    this.keepAliveTimer = null;
+                }
             },
 
             async broadcast(actionObj) {
@@ -1786,7 +1829,6 @@ function doGet(e) {
 
             handleRemoteAction(payload) {
                 if (!payload || !payload.action) return;
-                console.log("⚡ Nhận thao tác thời gian thực từ thiết bị khác:", payload.action, payload);
 
                 // 1. TỰ ĐỘNG ĐỐI CHIẾU DỮ LIỆU BÊN NÀO MỚI HƠN THÌ ĐỒNG BỘ VỀ PHÍA ĐÓ
                 if (payload.action === 'SYNC_HANDSHAKE') {
@@ -1799,28 +1841,20 @@ function doGet(e) {
                     const myAnswers = Object.keys(userSelections || {}).length;
                     const remoteAnswers = payload.answeredCount || 0;
 
-                    console.log(`[AutoReconcile] Bắt tay: Tôi (${this.getDeviceType()}) có ${myCount} câu, time ${myTime}. Máy kia (${payload.deviceType}) có ${remoteCount} câu, time ${remoteTime}.`);
-
-                    // TH1: 2 máy đang chạy 2 bộ đề hoàn toàn khác nhau (ví dụ: 30 câu vs 25 câu)
+                    // TH1: 2 máy đang chạy 2 bộ đề hoàn toàn khác nhau
                     if (myFingerprint !== remoteFingerprint) {
                         if (remoteTime > myTime && remoteCount > 0) {
-                            // Máy kia mới hơn -> Kéo đề máy kia về máy này!
-                            console.log("[AutoReconcile] Máy kia có đề mới hơn! Đang kéo về...");
                             showLiveToast(`⚡ Phát hiện đề mới hơn (${remoteCount} câu) từ ${payload.deviceType}! Đang tự động kéo về...`);
                             this.requestFullStateFromPeers();
                         } else if (myTime >= remoteTime && myCount > 0) {
-                            // Máy này mới hơn -> Tự động đẩy đề máy này sang máy kia!
-                            console.log("[AutoReconcile] Máy này có đề mới hơn! Tự động gửi sang máy kia...");
                             this.pushFullStateToPeers(false);
                         }
                     }
                     // TH2: Cùng bộ đề nhưng máy kia có tiến trình mới hơn
                     else if (myFingerprint === remoteFingerprint && myCount > 0) {
                         if (remoteTime > myTime && remoteAnswers > myAnswers) {
-                            console.log("[AutoReconcile] Máy kia có nhiều đáp án mới hơn! Kéo tiến trình về...");
                             this.requestFullStateFromPeers();
                         } else if (myTime > remoteTime && myAnswers > remoteAnswers) {
-                            console.log("[AutoReconcile] Máy này có nhiều đáp án mới hơn! Đẩy tiến trình sang...");
                             this.pushFullStateToPeers(false);
                         }
                     }
@@ -1829,13 +1863,11 @@ function doGet(e) {
                 else if (payload.action === 'SYNC_FULL_QUIZ_AND_PROGRESS') {
                     const { snapshot, gasUrl, deviceType, timestamp } = payload;
                     if (snapshot && Array.isArray(snapshot.currentQuizQuestions) && snapshot.currentQuizQuestions.length > 0) {
-                        // Cập nhật timestamp hoạt động để tránh vòng lặp ngược lại
                         if (timestamp) {
                             this.lastActiveTimestamp = Math.max(this.lastActiveTimestamp, timestamp);
                             try { localStorage.setItem('ap_quiz_last_active_time', this.lastActiveTimestamp.toString()); } catch(e) {}
                         }
 
-                        // Tự động cấu hình Google Drive Apps Script URL nếu máy này chưa có
                         if (gasUrl && typeof GoogleDriveAPI !== 'undefined' && !GoogleDriveAPI.getGasUrl()) {
                             GoogleDriveAPI.setGasUrl(gasUrl);
                             const inputGas = document.getElementById('input-gas-web-app-url');
@@ -1859,7 +1891,7 @@ function doGet(e) {
                         showLiveToast(`📤 Đã chia sẻ đề thi sang ${escapeHtml(payload.deviceType || 'thiết bị khác')}!`);
                     }
                 }
-                // 4. THAO TÁC CHỌN ĐÁP ÁN (DƯỚI 100MS)
+                // 4. THAO TÁC CHỌN ĐÁP ÁN (DƯỚI 100MS) - PHẢN XẠ SONG SONG MÀN HÌNH TỨC THÌ
                 else if (payload.action === 'SELECT_ANSWER') {
                     const { questionId, optionText, questionIndex, timestamp } = payload;
                     if (timestamp) {
@@ -1870,7 +1902,6 @@ function doGet(e) {
                         const isFirstTime = !userSelections[questionId];
                         userSelections[questionId] = optionText;
 
-                        // Cập nhật điểm nếu câu trả lời đúng
                         if (isFirstTime && currentQuizQuestions) {
                             const question = currentQuizQuestions.find(q => q.id === questionId);
                             if (question && optionText === question.correctAnswer) {
@@ -1878,7 +1909,6 @@ function doGet(e) {
                             }
                         }
 
-                        // Tìm chỉ số câu hỏi chính xác
                         let targetIdx = (typeof questionIndex === 'number' && questionIndex >= 0) ? questionIndex : -1;
                         if (targetIdx === -1 && currentQuizQuestions) {
                             targetIdx = currentQuizQuestions.findIndex(q => q.id === questionId);
@@ -1888,10 +1918,18 @@ function doGet(e) {
                             updateNavigationGridCellStatus(targetIdx);
                         }
 
-                        // Nếu đang mở đúng câu hỏi này thì cập nhật giao diện ngay lập tức
-                        if (currentQuestionIndex === targetIdx || (currentQuizQuestions && currentQuizQuestions[currentQuestionIndex] && currentQuizQuestions[currentQuestionIndex].id === questionId)) {
-                            displayQuestion(currentQuestionIndex);
+                        // PHẢN XẠ MÀN HÌNH SONG SONG (SCREEN MIRRORING)
+                        const toggleFollow = document.getElementById('modal-toggle-follow');
+                        const isFollowEnabled = toggleFollow ? toggleFollow.checked : true;
+
+                        if (isFollowEnabled && targetIdx >= 0 && currentQuestionIndex !== targetIdx) {
+                            this._isRemoteNavigating = true;
+                            displayQuestion(targetIdx, false);
+                            this._isRemoteNavigating = false;
+                        } else if (currentQuestionIndex === targetIdx || (currentQuizQuestions && currentQuizQuestions[currentQuestionIndex] && currentQuizQuestions[currentQuestionIndex].id === questionId)) {
+                            displayQuestion(currentQuestionIndex, false);
                         }
+
                         const qNum = (targetIdx >= 0 ? targetIdx : questionIndex) + 1;
                         showLiveToast(`⚡ Thiết bị khác vừa chọn đáp án Câu ${qNum}!`, targetIdx);
                         saveCurrentState(false);
@@ -1904,7 +1942,7 @@ function doGet(e) {
                         const isFollowEnabled = toggleFollow ? toggleFollow.checked : true;
                         if (isFollowEnabled && typeof displayQuestion === 'function') {
                             this._isRemoteNavigating = true;
-                            displayQuestion(payload.questionIndex);
+                            displayQuestion(payload.questionIndex, false);
                             this._isRemoteNavigating = false;
                             showLiveToast(`⚡ Chuyển sang Câu ${payload.questionIndex + 1} theo thiết bị khác!`, payload.questionIndex);
                         }
@@ -2888,12 +2926,12 @@ function doGet(e) {
         }
 
                 // --- HIỂN THỊ CÂU HỎI (BIÊN DỊCH ĐỀ BÀI VÀ GIẢI THÍCH ĐỊNH DẠNG PHONG PHÚ) ---
-        function displayQuestion(index) {
+        function displayQuestion(index, broadcastNav = true) {
             if (index < 0 || !currentQuizQuestions || index >= currentQuizQuestions.length) return;
             currentQuestionIndex = index;
 
-            // Bắn realtime chuyển câu hỏi sang thiết bị khác (nếu không phải do remote kích hoạt)
-            if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected && !RealtimeSync._isRemoteNavigating) {
+            // Bắn realtime chuyển câu hỏi sang thiết bị khác (chỉ khi broadcastNav=true và không phải remote)
+            if (broadcastNav && typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected && !RealtimeSync._isRemoteNavigating) {
                 RealtimeSync.broadcast({
                     action: 'NAVIGATE_QUESTION',
                     questionIndex: index
@@ -3069,9 +3107,8 @@ function doGet(e) {
                 // Ví dụ: document.getElementById('score-display').innerText = score;
             }
 
-            // 4. Cập nhật giao diện của chính câu hỏi này ngay lập tức
-            // Gọi lại displayQuestion để nó tự động vẽ lại màu xanh/đỏ và hiện giải thích
-            displayQuestion(currentQuestionIndex);
+            // 4. Cập nhật giao diện của chính câu hỏi này ngay lập tức (không lặp lại NAVIGATE_QUESTION)
+            displayQuestion(currentQuestionIndex, false);
 
             // 5. Cập nhật màu sắc trên lưới danh sách câu hỏi bên phải
             updateNavigationGridCellStatus(currentQuestionIndex); 
@@ -3981,6 +4018,24 @@ Giải thích:
                 }
             });
         }
+
+
+        // TỰ ĐỘNG PHỤC HỒI KẾT NỐI KHI QUAY LẠI TAB TRÊN ĐIỆN THOẠI HOẶC MÁY TÍNH
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && typeof RealtimeSync !== 'undefined') {
+                if (CloudSyncManager && CloudSyncManager.currentUser && (!RealtimeSync.ws || RealtimeSync.ws.readyState !== WebSocket.OPEN)) {
+                    console.log("⚡ Tab được kích hoạt: Tự động phục hồi kết nối Live Sync...");
+                    RealtimeSync.connect(CloudSyncManager.currentUser.email, CloudSyncManager.currentUser.password);
+                }
+            }
+        });
+        window.addEventListener('focus', () => {
+            if (typeof RealtimeSync !== 'undefined' && CloudSyncManager && CloudSyncManager.currentUser) {
+                if (!RealtimeSync.ws || RealtimeSync.ws.readyState !== WebSocket.OPEN) {
+                    RealtimeSync.connect(CloudSyncManager.currentUser.email, CloudSyncManager.currentUser.password);
+                }
+            }
+        });
 
     </script>
 </body>
