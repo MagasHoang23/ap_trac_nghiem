@@ -360,10 +360,7 @@
                     <button id="btn-badge-style-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200 text-[11px]" title="Đổi kiểu thẻ đáp án: A, B, C, D hoặc 1, 2, 3, 4">
                         <span id="badge-style-label">A/1</span>
                     </button>
-                    <!-- Nút Bật/Tắt xáo trộn đáp án -->
-                    <button id="btn-shuffle-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-200" title="Bật/Tắt xáo trộn vị trí đáp án">
-                        <span id="shuffle-icon">🔀</span>
-                    </button>
+
                 </div>
 
                 <!-- Nút Toggle danh sách câu hỏi trên Mobile -->
@@ -984,7 +981,7 @@
         let currentFontSize = 'base'; // 'sm' | 'base' | 'lg' | 'xl'
         let currentTextAlign = 'left'; // 'left' | 'justify'
         let currentBadgeStyle = 'letters'; // 'letters' ('A, B, C, D') | 'numbers' ('1, 2, 3, 4')
-        let shouldShuffleOptions = false; // Mặc định không xáo trộn để khớp 100% với lời giải của AI!
+        const shouldShuffleOptions = true; // LUÔN LUÔN XÁO TRỘN ĐÁP ÁN (CƠ CHẾ MẶC ĐỊNH DUY NHẤT)
         let isMobileNavCollapsed = false;
 
         function initDisplaySettings() {
@@ -995,7 +992,6 @@
                     currentFontSize = parsed.fontSize || 'base';
                     currentTextAlign = parsed.textAlign || 'left';
                     currentBadgeStyle = parsed.badgeStyle || 'letters';
-                    shouldShuffleOptions = (parsed.shuffleOptions !== undefined) ? !!parsed.shuffleOptions : false;
                 }
             } catch (e) { console.warn("Lỗi đọc cài đặt hiển thị:", e); }
 
@@ -1025,21 +1021,12 @@
             const badgeLabel = document.getElementById('badge-style-label');
             if (badgeLabel) badgeLabel.textContent = currentBadgeStyle === 'numbers' ? '1-4' : 'A-D';
 
-            const shuffleBtn = document.getElementById('btn-shuffle-toggle');
-            if (shuffleBtn) {
-                shuffleBtn.className = shouldShuffleOptions 
-                    ? 'px-1.5 sm:px-2 py-1 rounded bg-indigo-600 text-white font-bold'
-                    : 'px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-300 opacity-60';
-                shuffleBtn.title = shouldShuffleOptions ? 'Xáo trộn đáp án: ĐANG BẬT' : 'Xáo trộn đáp án: ĐÃ TẮT (Giữ nguyên A, B, C, D)';
-            }
-
             // Lưu cài đặt
             try {
                 localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
                     fontSize: currentFontSize,
                     textAlign: currentTextAlign,
-                    badgeStyle: currentBadgeStyle,
-                    shuffleOptions: shouldShuffleOptions
+                    badgeStyle: currentBadgeStyle
                 }));
             } catch (e) {}
         }
@@ -2726,6 +2713,8 @@ function doGet(e) {
                     if (!currentQuestionObj.correctAnswer) {
                         currentQuestionObj.correctAnswer = currentQuestionObj.options[0];
                     }
+                    // Lưu danh sách đáp án gốc ban đầu trước khi xáo trộn để đối chiếu lời giải
+                    currentQuestionObj.originalOptions = [...currentQuestionObj.options];
                     // Đồng bộ giải thích riêng theo cả optionText
                     for (const [char, explText] of Object.entries(currentQuestionObj.specificExplanations)) {
                         const idx = charToIndex[char];
@@ -2881,9 +2870,12 @@ function doGet(e) {
                     shuffleArray(currentQuizQuestions);
                     currentQuizQuestions.forEach(question => {
                         if (question && question.options && Array.isArray(question.options)) { 
-                            if (shouldShuffleOptions) {
-                                shuffleArray(question.options);
+                            // Lưu lại thứ tự đáp án gốc nếu chưa có để phục vụ đối chiếu lời giải
+                            if (!question.originalOptions || question.originalOptions.length !== question.options.length) {
+                                question.originalOptions = [...question.options];
                             }
+                            // LUÔN LUÔN XÁO TRỘN ĐÁP ÁN (CƠ CHẾ MẶC ĐỊNH DUY NHẤT)
+                            shuffleArray(question.options);
                             if (question.correctAnswer && question.correctAnswer.endsWith('*')) {
                                 question.correctAnswer = question.correctAnswer.slice(0, -1).trim();
                             }
@@ -2926,6 +2918,181 @@ function doGet(e) {
         }
 
                 // --- HIỂN THỊ CÂU HỎI (BIÊN DỊCH ĐỀ BÀI VÀ GIẢI THÍCH ĐỊNH DẠNG PHONG PHÚ) ---
+        
+        // =========================================================================
+        // BỘ ĐỐI CHIẾU VÀ TÁI SẮP XẾP LỜI GIẢI THEO THỨ TỰ ĐÁP ÁN XÁO TRỘN
+        // =========================================================================
+        function reconcileExplanation(question, currentBadgeStyle) {
+            if (!question) return "Không có giải thích chi tiết.";
+            const optionLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            const origOptions = (question.originalOptions && question.originalOptions.length === question.options.length)
+                ? question.originalOptions
+                : [...question.options];
+            const currOptions = question.options;
+            const correctAnswer = question.correctAnswer || "";
+
+            // 1. Tạo bảng ánh xạ:
+            // origLetter ('A', 'B', 'C', 'D') -> newBadge ('A', 'B', 'C', 'D' hoặc '1', '2', '3', '4')
+            // optionText -> newBadge
+            const origToNewBadge = {};
+            const origToNewLetter = {};
+            const textToNewBadge = {};
+
+            currOptions.forEach((optText, newIdx) => {
+                const newBadge = currentBadgeStyle === 'numbers' ? String(newIdx + 1) : (optionLetters[newIdx] || String(newIdx + 1));
+                const newLetter = optionLetters[newIdx] || String(newIdx + 1);
+                textToNewBadge[optText.trim().toLowerCase()] = newBadge;
+
+                const origIdx = origOptions.indexOf(optText);
+                if (origIdx !== -1) {
+                    const origLetter = optionLetters[origIdx];
+                    origToNewBadge[origLetter] = newBadge;
+                    origToNewLetter[origLetter] = newLetter;
+                }
+            });
+
+            const correctBadge = textToNewBadge[correctAnswer.trim().toLowerCase()] || 
+                                 (currOptions.indexOf(correctAnswer) !== -1 ? (currentBadgeStyle === 'numbers' ? String(currOptions.indexOf(correctAnswer) + 1) : optionLetters[currOptions.indexOf(correctAnswer)]) : "Đúng");
+
+            // 2. Thu thập giải thích riêng (specificExplanations) nếu có và sắp xếp theo đúng thứ tự các nút trên màn hình
+            let specificBlocks = [];
+            if (question.specificExplanations && Object.keys(question.specificExplanations).length > 0) {
+                currOptions.forEach((optText, newIdx) => {
+                    const newBadge = currentBadgeStyle === 'numbers' ? String(newIdx + 1) : (optionLetters[newIdx] || String(newIdx + 1));
+                    const origIdx = origOptions.indexOf(optText);
+                    const origLetterLower = (optionLetters[origIdx] || '').toLowerCase();
+
+                    const expl = question.specificExplanations[optText] || 
+                                 (origIdx !== -1 ? question.specificExplanations[origLetterLower] : "") ||
+                                 question.specificExplanations[optText.trim().toLowerCase()] || "";
+
+                    if (expl && expl.trim()) {
+                        const isThisCorrect = (optText === correctAnswer);
+                        const icon = isThisCorrect ? "✅" : "❌";
+                        specificBlocks.push(`- ${icon} **[${newBadge}] ${escapeHtml(optText)}**: ${expl.trim()}`);
+                    }
+                });
+            }
+
+            // 3. Phân tích lời giải chung (general explanation)
+            const rawGeneralExpl = question.explanation || "";
+            if (!rawGeneralExpl.trim() && specificBlocks.length > 0) {
+                return specificBlocks.join('\n') + `\n\n-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`;
+            }
+
+            const lines = rawGeneralExpl.replace(/\r\n/g, '\n').split('\n');
+            const headerLines = [];
+            const parsedOptionBlocks = {}; // newIdx -> array of lines
+            const conclusionLines = [];
+
+            // Regex nhận diện các dòng phân tích phương án cụ thể (VD: "- A: develop...", "- Đáp án B...", "A. ...", "Xét phương án C...")
+            const optLineRegex = /^(?:\s*[-*+•\d\.]*\s*)?(?:xét\s+)?(?:đáp án|phương án|lựa chọn|câu)?\s*[*_]*([A-Ha-h])[*_]*\s*[:\.\)-]\s*(.*)/i;
+            const isConclusionRegex = /(?:->|=>|➜)?\s*(?:Do đó,?\s*)?(?:đáp án đúng\s+(?:là\s+)?|chọn\s+đáp án\s+|kết luận:?\s*(?:đáp án\s+)?)\s*[*_]*([A-Ha-h])(?:\b|\.|\*|\))/i;
+
+            let inOptBlock = false;
+            let currentBlockIdx = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const stripped = line.trim();
+                if (!stripped) continue;
+
+                if (isConclusionRegex.test(stripped)) {
+                    inOptBlock = false;
+                    conclusionLines.push(`-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`);
+                    continue;
+                }
+
+                const optMatch = stripped.match(optLineRegex);
+                if (optMatch) {
+                    const origLet = optMatch[1].toUpperCase();
+                    if (origToNewLetter[origLet]) {
+                        const newIdx = optionLetters.indexOf(origToNewLetter[origLet]);
+                        currentBlockIdx = newIdx;
+                        inOptBlock = true;
+                        if (!parsedOptionBlocks[newIdx]) parsedOptionBlocks[newIdx] = [];
+
+                        const newBadge = origToNewBadge[origLet] || newBadge;
+                        const body = optMatch[2] ? optMatch[2].trim() : "";
+                        const optCurrText = currOptions[newIdx] || "";
+                        const isThisCorrect = (optCurrText === correctAnswer);
+                        const icon = isThisCorrect ? "✅" : "❌";
+
+                        parsedOptionBlocks[newIdx].push(`- ${icon} **[${newBadge}]**: ${body}`);
+                        continue;
+                    }
+                }
+
+                if (inOptBlock && currentBlockIdx !== null) {
+                    parsedOptionBlocks[currentBlockIdx].push("  " + stripped);
+                } else {
+                    headerLines.append ? headerLines.push(line) : headerLines.push(line);
+                }
+            }
+
+            let finalReconciledText = "";
+
+            // Nếu phân tích được các khối phương án từ lời giải chung:
+            if (Object.keys(parsedOptionBlocks).length > 0) {
+                const combinedLines = [];
+                if (headerLines.length > 0) {
+                    combinedLines.push(...headerLines);
+                    combinedLines.push("");
+                }
+                // TÁI SẮP XẾP THEO ĐÚNG THỨ TỰ CÁC NÚT TRÊN MÀN HÌNH (0, 1, 2, 3...)
+                for (let idx = 0; idx < currOptions.length; idx++) {
+                    if (parsedOptionBlocks[idx] && parsedOptionBlocks[idx].length > 0) {
+                        combinedLines.push(...parsedOptionBlocks[idx]);
+                    }
+                }
+                if (conclusionLines.length > 0) {
+                    combinedLines.push("");
+                    combinedLines.push(...conclusionLines);
+                } else {
+                    combinedLines.push(`\n-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`);
+                }
+                finalReconciledText = combinedLines.join('\n');
+            } else {
+                // Nếu lời giải viết dạng đoạn văn tự do: Áp dụng thay thế ngữ cảnh thông minh
+                let workingText = rawGeneralExpl;
+
+                // 1. Thay thế "B ( what is marriage )" hoặc "D ( what was marriage )"
+                workingText = workingText.replace(/\b([A-Ha-h])\s*\(\s*([^)]+)\s*\)/g, (match, letter, inner) => {
+                    const cleanInner = inner.trim().toLowerCase();
+                    let matchedBadge = null;
+                    for (const [optT, b] of Object.entries(textToNewBadge)) {
+                        if (optT.includes(cleanInner) || cleanInner.includes(optT)) {
+                            matchedBadge = b;
+                            break;
+                        }
+                    }
+                    const newB = matchedBadge || origToNewBadge[letter.toUpperCase()] || letter;
+                    return `**[${newB}]** (${inner})`;
+                });
+
+                // 2. Thay thế các cụm ngữ cảnh "đáp án B", "loại C", "và D", "hoặc A"
+                workingText = workingText.replace(/(\b(?:đáp án|phương án|lựa chọn|câu|loại|chọn|xét|mục|và|hoặc|hay)(?:\s+ngay)?(?:\s+đáp án|\s+phương án|\s+câu)?\s+)[*_]*([A-Ha-h])\b/gi, (match, prefix, letter) => {
+                    const newB = origToNewBadge[letter.toUpperCase()] || letter;
+                    return `${prefix}**[${newB}]**`;
+                });
+
+                // 3. Thay thế câu kết luận
+                if (isConclusionRegex.test(workingText)) {
+                    workingText = workingText.replace(isConclusionRegex, `-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`);
+                } else {
+                    workingText += `\n\n-> Do đó, đáp án đúng là: **[${correctBadge}] ${escapeHtml(correctAnswer)}**`;
+                }
+
+                if (specificBlocks.length > 0) {
+                    finalReconciledText = specificBlocks.join('\n') + "\n\n" + workingText;
+                } else {
+                    finalReconciledText = workingText;
+                }
+            }
+
+            return finalReconciledText;
+        }
+
         function displayQuestion(index, broadcastNav = true) {
             if (index < 0 || !currentQuizQuestions || index >= currentQuizQuestions.length) return;
             currentQuestionIndex = index;
@@ -3004,26 +3171,10 @@ function doGet(e) {
                             const explanationDiv = document.createElement('div');
                             explanationDiv.classList.add('explanation-box');
                             
-                            // Lấy giải thích: ưu tiên giải thích riêng nếu có, kết hợp giải thích chung
-                            const char = (optionLetters[optIdx] || '').toLowerCase();
-                            const specificExpl = question.specificExplanations && (question.specificExplanations[char] || question.specificExplanations[optionText]);
-                            const generalExpl = question.explanation;
-
-                            let contentToRender = "";
-                            if (specificExpl && generalExpl && specificExpl !== generalExpl) {
-                                contentToRender = specificExpl + "\n\n" + generalExpl;
-                            } else {
-                                contentToRender = specificExpl || generalExpl || "Không có giải thích chi tiết.";
-                            }
-
-                            // TỰ ĐỘNG ĐỒNG BỘ CÂU KẾT LUẬN TRONG LỜI GIẢI VỚI NÚT ĐÁP ÁN THỰC TẾ
                             const currentBadge = currentBadgeStyle === 'numbers' ? (optIdx + 1) : (optionLetters[optIdx] || (optIdx + 1));
-                            contentToRender = contentToRender.replace(
-                                /(?:->|=>|➜)?\s*(?:Do đó,?\s*)?(?:đáp án đúng\s+(?:là\s+)?|chọn\s+đáp án\s+|kết luận:?\s*(?:đáp án\s+)?)\s*[*_]*([A-H])(?:\b|\.|\*|\))/gi,
-                                () => {
-                                    return `-> Do đó, đáp án đúng là: **[${currentBadge}] ${escapeHtml(question.correctAnswer)}**`;
-                                }
-                            );
+                            
+                            // ĐỐI CHIẾU VÀ TÁI SẮP XẾP LỜI GIẢI THEO THỨ TỰ ĐÁP ÁN XÁO TRỘN TRÊN MÀN HÌNH
+                            let contentToRender = reconcileExplanation(question, currentBadgeStyle);
                             
                             let titleHtml = "";
                             if (isSelected) {

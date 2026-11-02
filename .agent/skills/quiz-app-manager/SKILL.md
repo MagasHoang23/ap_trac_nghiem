@@ -219,15 +219,13 @@ Hỗ trợ các cú pháp:
 - `[u]từ cần gạch chân[/u]` hoặc `[gc]từ cần gạch chân[/gc]`
 Biên dịch thành `<span class="underline underline-offset-4 decoration-2 decoration-slate-700 font-medium">...</span>` rõ nét, rất thích hợp cho đề thi tiếng Anh (tìm lỗi sai, phát âm, trọng âm, từ đồng nghĩa/trái nghĩa).
 
-### 8.2. Giải quyết triệt để lỗi lệch đáp án khi xáo trộn (Option-Explanation Synchronization):
-1. **Nguyên nhân**: AI soạn đề mặc định coi dòng đầu là A, dòng hai là B... và viết câu kết luận như *"Do đó đáp án đúng là A"*. Khi ứng dụng xáo trộn ngẫu nhiên vị trí các lựa chọn, câu A có thể rơi vào nút D, dẫn đến việc nút D đổi màu xanh nhưng lời giải lại ghi A gây hiểu nhầm.
-2. **Cơ chế 3 lớp bảo vệ**:
-   - **Lớp 1 (Trong Prompt mẫu)**: Yêu cầu AI luôn kèm theo nội dung chữ của đáp án (VD: *"-> Do đó, đáp án đúng là: what marriage is (Đáp án A)"*).
-   - **Lớp 2 (Tự động đồng bộ trong App)**: Trình dựng giao diện tự động bắt các mẫu kết luận như *"đáp án đúng là [A-H]"* và tự động cập nhật khớp với chữ cái/số của nút đáp án thực tế trên màn hình (`[D] what marriage is`).
-   - **Lớp 3 (Công cụ điều khiển)**:
-     * Nút `A/1`: Chuyển đổi linh hoạt giữa kiểu thẻ chữ cái (`A, B, C, D`) và kiểu số thứ tự (`1, 2, 3, 4`).
-     * Nút `🔀`: Cho phép Bật / Tắt tính năng xáo trộn đáp án. Khi tắt, các phương án giữ nguyên 100% thứ tự A, B, C, D như đề bài gốc.
-
+### 8.2. Cơ chế Xáo trộn Đáp án Mặc định & Tự động Tái sắp xếp Lời giải (Explanation Auto-Reconciliation):
+1. **Cơ chế Xáo trộn Đáp án là Duy nhất và Mặc định**:
+   - Ứng dụng đã loại bỏ nút bật/tắt xáo trộn; mọi câu hỏi khi khởi tạo đều tự động hoán đổi ngẫu nhiên vị trí các lựa chọn đáp án. Điều này giúp người học không học vẹt vị trí chữ cái mà phải hiểu rõ bản chất kiến thức.
+2. **Bộ đối chiếu và tái sắp xếp lời giải theo đúng thứ tự trên màn hình (`reconcileExplanation`)**:
+   - **Tái sắp xếp thứ tự luận điểm**: Nếu lời giải phân tích từng phương án (dạng `- A: ... - B: ... - C: ... - D: ...`), hệ thống sẽ tự động bóc tách và sắp xếp lại các gạch đầu dòng theo đúng thứ tự xuất hiện của các nút trên màn hình từ trên xuống dưới (Slot 0 -> Slot 1 -> Slot 2 -> Slot 3).
+   - **Tự động chuyển đổi nhãn phương án**: Mọi từ ngữ chỉ định trong lời giải (như `đáp án A`, `loại ngay B`, `phương án C`, `(D)`) đều được ánh xạ tự động sang đúng chữ cái/số của nút tương ứng trên màn hình thực tế.
+   - **Đồng bộ câu kết luận**: Tự động nhận diện và cập nhật câu chốt `-> Do đó, đáp án đúng là: **[Badge] [Nội dung chữ của đáp án đúng]**`.
 
 ---
 
