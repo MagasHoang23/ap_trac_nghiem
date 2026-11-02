@@ -103,3 +103,5 @@ Vui lòng tham khảo file [`SKILL.md`](./SKILL.md) trong gói này để biết
 
    - **Nút "📲 Đồng bộ 2 máy"**: Khi 2 máy đang mở 2 đề thi khác nhau (ví dụ: máy tính 30 câu, điện thoại 25 câu), người dùng chỉ cần bấm nút `📲 Đồng bộ 2 máy` -> `Đẩy bộ đề máy này sang máy kia` để cả 2 thiết bị lập tức chuyển về cùng một bộ đề 100% trong tích tắc.
    - **Tự động chuyển câu song song (Follow Navigation)**: Bật/Tắt chế độ tự động lật câu hỏi trên máy tính mỗi khi bạn bấm chuyển câu trên điện thoại.
+
+   - **Tự động đối chiếu thời gian (Auto Timestamp Reconciliation)**: Hai máy tự động so sánh thời điểm thao tác gần nhất (`lastActiveTimestamp`). Bên nào có dữ liệu mới hơn sẽ tự động làm nguồn chuẩn đồng bộ sang bên còn lại, không cần người dùng phải bấm thao tác thủ công.

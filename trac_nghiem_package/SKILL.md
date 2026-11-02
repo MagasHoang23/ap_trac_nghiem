@@ -287,3 +287,14 @@ Biên dịch thành `<span class="underline underline-offset-4 decoration-2 deco
      - Khi một máy mới kết nối kênh, nếu phát hiện số lượng câu hỏi khác nhau (ví dụ 25 câu vs 30 câu), hệ thống sẽ bật thông báo nổi có nút `[Đồng bộ ngay]`.
   3. **Đồng bộ lật câu hỏi song song (Follow Navigation)**:
      - Tùy chọn `🔗 Tự động lật câu hỏi theo máy kia` (mặc định BẬT): Khi chuyển câu trên điện thoại, màn hình máy tính tự động lật sang đúng câu đó để người dùng theo dõi tiện lợi.
+
+  4. **Cơ chế Tự động đối chiếu thời gian & Giải quyết xung đột (Auto Timestamp Reconciliation)**:
+     - Khi 2 thiết bị kết nối, chúng tự động gửi gói `SYNC_HANDSHAKE` chứa:
+       * `quizFingerprint`: Vân tay nhận diện đề thi.
+       * `questionCount`: Số lượng câu hỏi hiện tại.
+       * `answeredCount`: Số câu đã trả lời.
+       * `lastActiveTimestamp`: Thời điểm thao tác gần nhất được lưu bền vững trên `localStorage`.
+     - **Thuật toán tự động**:
+       * Nếu 2 máy có đề thi khác nhau (ví dụ: máy tính 30 câu vs điện thoại 25 câu): Thiết bị có `lastActiveTimestamp` mới hơn sẽ tự động đóng gói toàn bộ đề thi bắn sang thiết bị cũ hơn. Thiết bị cũ hơn tự động nhận và tải lại đề trong chưa đầy 100ms mà không cần người dùng thao tác thủ công.
+       * Xử lý gói tin đính kèm `> 4KB`: Hỗ trợ tải tự động qua `attachment.url` của máy chủ pub/sub để truyền tải trọn vẹn những bộ đề lớn (từ 30 đến 100+ câu).
+       * Watchdog 9s: Ngăn chặn triệt để trạng thái kẹt xoay vòng `Đang đồng bộ...` trên trình duyệt di động.
