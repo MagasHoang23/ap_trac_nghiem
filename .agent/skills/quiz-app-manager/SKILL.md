@@ -145,3 +145,55 @@ Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra b�
    * `saveCurrentState` / `loadAttemptForReview`: Bộ nhớ lưu trữ tiến trình và xem lại bài thi.
 3. **Kiểm thử trước khi push**:
    * Chạy `node -e "eval(require('fs').readFileSync('index.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1])"` để xác nhận mã JavaScript không có lỗi cú pháp.
+
+
+---
+
+## 6. ĐỒNG BỘ ĐÁM MÂY GOOGLE DRIVE & MÃ HÓA BẢO MẬT (CLOUD SYNC ARCHITECTURE)
+
+Hệ thống tích hợp giải pháp đồng bộ dữ liệu đa thiết bị không phụ thuộc vào máy chủ trung gian (Serverless Architecture), lưu trữ trực tiếp trên tài khoản Google Drive của người dùng:
+
+### 6.1. Nguyên lý bảo mật đầu cuối (End-to-End Encryption):
+1. **Tài khoản & Mật khẩu**:
+   - Mỗi tài khoản Google Drive gắn liền với một mật khẩu do người dùng tự đặt khi đăng ký/khởi tạo.
+   - Sử dụng chuẩn **W3C Web Cryptography API** (`window.crypto.subtle`):
+     - Hàm băm khóa: **PBKDF2** với **100,000 vòng lặp** HMAC-SHA-256 + Salt ngẫu nhiên 16 bytes.
+     - Thuật toán mã hóa: **AES-GCM 256-bit** với IV ngẫu nhiên 12 bytes.
+     - Chuỗi xác thực Verifier: SHA-256 (`account + password + salt`).
+2. **Khôi phục dữ liệu**:
+   - Khi đăng nhập trên thiết bị mới, người dùng nhập tài khoản & mật khẩu.
+   - Ứng dụng tải file `ap_trac_nghiem_cloud_backup.json` từ Google Drive của họ và tiến hành kiểm tra verifier + giải mã AES-GCM.
+   - **Chỉ khi nhập đúng tài khoản và đúng mật khẩu**, dữ liệu mới được giải mã thành công và nạp vào bài thi. Nếu sai mật khẩu, hệ thống báo lỗi và từ chối truy cập.
+
+### 6.2. Phân bổ đồng bộ ngầm thông minh (Background Auto-sync Strategy):
+- **Theo hành động của người dùng (Action-driven)**:
+  - Chọn đáp án (`selectAnswer`): Gom nhóm và hoãn đồng bộ (*Debounce 8 giây*) để tránh gửi yêu cầu liên tục khi làm bài nhanh.
+  - Cắm cờ câu hỏi (`flagQuestionBtn`): Debounce 8 giây.
+  - Nộp bài thi (`proceedWithSubmission`): Kích hoạt đẩy dữ liệu lên Google Drive **ngay lập tức** (0 giây).
+  - Nạp đề thi mới (`confirmLoadQuizBtn`): Kích hoạt đẩy dữ liệu lên Google Drive **ngay lập tức** (0 giây).
+- **Theo chu kỳ thời gian (Heartbeat-driven)**:
+  - Mỗi **45 giây**, ứng dụng kiểm tra trạng thái cờ `isDirty`. Nếu có thay đổi chưa lưu, hệ thống tự động đồng bộ ngầm lên Google Drive.
+- **Sao lưu ngoại tuyến (Offline Vault)**:
+  - Cho phép xuất file `.json` đã mã hóa hoặc file json thông thường về máy và nạp lại bất cứ lúc nào mà không cần kết nối mạng.
+
+---
+
+## 7. CĂN CHỈNH GIAO DIỆN & CHỐNG PHÓNG TO TRÊN ĐIỆN THOẠI (MOBILE UX RULES)
+
+1. **Khắc phục lỗi phóng to bất ngờ trên điện thoại**:
+   - Trình duyệt di động (iOS Safari và Android Chrome) tự động phóng to trang web (auto-zoom) khi người dùng chạm vào các ô `<input>` hoặc `<textarea>` có cỡ chữ `< 16px`.
+   - **Quy tắc bắt buộc**: Mọi phần tử nhập liệu trên thiết bị di động phải áp dụng:
+     ```css
+     @media (max-width: 768px) {
+         input, textarea, select, .form-input {
+             font-size: 16px !important;
+         }
+     }
+     ```
+   - Thiết lập thẻ meta viewport đầy đủ: `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">`.
+   - Các modal cài đặt phải có `max-h-[92vh]`, `overflow-y: auto`, và đệm padding phù hợp màn hình nhỏ.
+
+2. **Thanh công cụ căn chỉnh**:
+   - **Nút cỡ chữ**: `A-` (nhỏ 1.05rem), `A` (chuẩn 1.3rem), `A+` (lớn 1.55rem), `A++` (rất lớn 1.85rem).
+   - **Nút căn lề**: Chuyển đổi giữa `Căn trái` và `Căn đều 2 bên` (`justify`).
+   - **Toggle danh sách trên điện thoại**: Nút `📋 DS` cho phép thu gọn/mở rộng bảng danh sách câu hỏi để tập trung tối đa không gian cho nội dung trắc nghiệm.

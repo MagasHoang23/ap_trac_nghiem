@@ -71,3 +71,19 @@ Vui lòng tham khảo file [`SKILL.md`](./SKILL.md) trong gói này để biết
 ├── SKILL.md           # Hướng dẫn chi tiết cho các Trợ lý AI khác
 └── README.md          # Hướng dẫn sử dụng tổng quan
 ```
+
+
+---
+
+### ✨ Tính Năng Mới Nâng Cao:
+1. **Đồng bộ đám mây Google Drive (Serverless Cloud Sync)**:
+   - Đăng nhập/Đăng ký tài khoản và mật khẩu bảo vệ.
+   - Dữ liệu câu hỏi, tiến trình làm bài và lịch sử thi được lưu trữ trực tiếp trên tài khoản Google Drive cá nhân của người dùng (`ap_trac_nghiem_cloud_backup.json`).
+   - Mã hóa bảo mật đầu cuối bằng chuẩn **AES-GCM 256-bit + PBKDF2 (100,000 vòng lặp)**. Chỉ người có đúng mật khẩu mới giải mã được.
+   - Cơ chế đồng bộ ngầm tự động (Background Auto-sync): debounce thông minh 8s khi làm bài, đồng bộ tức thời khi nộp bài hoặc nạp đề mới, và nhịp tim định kỳ mỗi 45s.
+2. **Căn chỉnh giao diện linh hoạt (Responsive Display Controls)**:
+   - Tùy chỉnh kích thước cỡ chữ 4 cấp độ: `A-` (nhỏ), `A` (chuẩn), `A+` (lớn), `A++` (rất lớn).
+   - Tùy chỉnh căn lề: Căn trái hoặc Căn đều hai bên (`justify`).
+   - Nút thu gọn danh sách câu hỏi trên điện thoại để tối ưu không gian đọc bài.
+3. **Trải nghiệm di động hoàn hảo (Anti-Zoom Mobile Fix)**:
+   - Khắc phục triệt để lỗi tự động phóng to màn hình khi mở modal thiết lập đề thi trên điện thoại (đảm bảo `font-size: 16px !important` cho tất cả ô nhập liệu).

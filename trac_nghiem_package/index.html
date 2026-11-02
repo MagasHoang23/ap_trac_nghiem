@@ -2,9 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trắc nghiệm Ôn luyện</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Trắc nghiệm Ôn luyện & Đồng bộ Google Drive</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Identity Services cho liên kết Google Drive -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -138,33 +140,80 @@
             background: #94a3b8;
         }
 
-        /* Modal styles */
+        /* CHỐNG PHÓNG TO BẤT NGỜ TRÊN ĐIỆN THOẠI (Mobile Auto-zoom Prevention) */
+        @media (max-width: 768px) {
+            input, textarea, select, .form-input {
+                font-size: 16px !important; /* iOS và Android sẽ không tự phóng to màn hình khi font >= 16px */
+            }
+        }
+
+        /* TÙY CHỌN CĂN CHỈNH CỠ CHỮ & CĂN LỀ GIAO DIỆN */
+        .font-size-sm #question-text { font-size: 1.05rem !important; line-height: 1.55; }
+        .font-size-sm .option-content { font-size: 0.92rem !important; }
+        .font-size-sm .explanation-box { font-size: 0.88rem !important; }
+
+        .font-size-base #question-text { font-size: 1.3rem !important; line-height: 1.6; }
+        .font-size-base .option-content { font-size: 1.02rem !important; }
+        .font-size-base .explanation-box { font-size: 0.95rem !important; }
+
+        .font-size-lg #question-text { font-size: 1.55rem !important; line-height: 1.65; }
+        .font-size-lg .option-content { font-size: 1.15rem !important; }
+        .font-size-lg .explanation-box { font-size: 1.05rem !important; }
+
+        .font-size-xl #question-text { font-size: 1.85rem !important; line-height: 1.7; }
+        .font-size-xl .option-content { font-size: 1.3rem !important; }
+        .font-size-xl .explanation-box { font-size: 1.15rem !important; }
+
+        .text-align-left #question-text, .text-align-left .option-content, .text-align-left .explanation-box {
+            text-align: left !important;
+        }
+        .text-align-justify #question-text, .text-align-justify .option-content, .text-align-justify .explanation-box {
+            text-align: justify !important;
+        }
+
+        /* Modal styles hiện đại, responsive, không bao giờ tràn màn hình di động */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease;
+            padding: 12px;
         }
-        .modal-content { /* Shared by both modals */
+        .modal-content {
             background-color: white;
-            padding: 20px; /* Adjusted to p-5 Tailwind equivalent */
-            border-radius: 8px; /* Tailwind rounded-lg */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Tailwind shadow-lg */
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             text-align: left;
-            max-width: 600px; /* Can be controlled by Tailwind w- classes */
-            width: 90%; /* Tailwind w-11/12 or similar */
+            max-width: 680px;
+            width: 100%;
+            max-height: 92vh;
+            overflow-y: auto;
         }
-        /* Specific style for load quiz modal content to enable scrolling */
-        #load-quiz-modal .modal-content-scrollable {
-            max-height: 85vh; /* Max height for the modal content area */
-            overflow-y: auto; /* Enable vertical scroll if content overflows */
+        .modal-content-scrollable {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Animation cho trạng thái đồng bộ */
+        @keyframes pulse-sync {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+        }
+        .animate-sync-spin {
+            animation: spin 1.2s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { rotate(360deg); }
         }
 
         .modal-buttons button {
@@ -188,19 +237,64 @@
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen text-gray-800">
 
-    <header class="bg-slate-700 text-white p-4 text-center shadow-md shrink-0">
-        <h1 class="text-2xl font-bold">Hệ thống Trắc nghiệm Ôn luyện</h1>
+    <header class="bg-slate-800 text-white px-3 sm:px-6 py-3 shadow-md shrink-0 border-b border-slate-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-md shrink-0">
+                    <span class="text-base sm:text-lg">🎯</span>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate">Trắc nghiệm Ôn luyện</h1>
+                    <p class="text-[10px] sm:text-[11px] text-slate-300 hidden md:block">Đồng bộ đám mây Google Drive đa thiết bị • Mã hóa bảo mật</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Nút Đồng bộ Google Drive -->
+                <button id="cloud-sync-btn" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600 transition-all shadow-sm active:scale-95" title="Mở quản lý tài khoản & đồng bộ đám mây">
+                    <span id="sync-icon" class="text-sm">☁️</span>
+                    <span id="sync-label" class="hidden xs:inline sm:inline">Cloud Sync</span>
+                </button>
+
+                <!-- Thanh công cụ Căn chỉnh kích thước & Căn lề -->
+                <div class="flex items-center bg-slate-700 rounded-lg p-0.5 border border-slate-600 text-xs">
+                    <button id="btn-font-decrease" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200" title="Giảm cỡ chữ">A-</button>
+                    <button id="btn-font-reset" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200 text-[11px]" title="Cỡ chữ chuẩn">A</button>
+                    <button id="btn-font-increase" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200" title="Tăng cỡ chữ">A+</button>
+                    <span class="w-[1px] h-3.5 bg-slate-600 mx-0.5"></span>
+                    <button id="btn-align-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-200" title="Căn lề (Trái / Căn đều)">
+                        <span id="align-icon">☰</span>
+                    </button>
+                </div>
+
+                <!-- Nút Toggle danh sách câu hỏi trên Mobile -->
+                <button id="btn-mobile-nav-toggle" class="md:hidden px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1" title="Ẩn/Hiện danh sách câu">
+                    <span>📋</span>
+                    <span id="mobile-nav-label">DS</span>
+                </button>
+            </div>
+        </div>
     </header>
 
     <div class="flex-grow flex flex-col md:flex-row p-2 md:p-4 gap-2 md:gap-4 min-h-0">
         <div id="quiz-area" class="flex-grow md:w-2/3 lg:w-3/4 bg-white p-4 md:p-6 rounded-lg shadow-xl flex flex-col min-h-0 overflow-hidden resize-y">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 pb-2 border-b shrink-0">
-                <div id="question-info" class="text-lg md:text-xl font-semibold text-slate-700 mb-2 sm:mb-0 min-w-[120px] text-center">Câu 1/0</div>
-                <div id="timer" class="text-lg md:text-xl font-mono bg-slate-100 px-3 py-1 rounded-md text-slate-700">00:00</div>
-                <button id="flag-question-btn" class="flex items-center px-3 py-2 md:px-4 md:py-2 bg-yellow-400 text-yellow-900 rounded-lg hover:bg-yellow-500 transition-colors text-sm md:text-base mt-2 sm:mt-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
-                    <span class="ml-2">Cắm cờ</span>
-                </button>
+            <!-- Hàng thông tin câu hỏi, đồng hồ & căn chỉnh -->
+            <div class="flex flex-wrap justify-between items-center mb-3 pb-2.5 border-b border-gray-200 gap-2 shrink-0">
+                <div class="flex items-center gap-2">
+                    <div id="question-info" class="text-base sm:text-lg font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">Câu 1/0</div>
+                    <!-- Indicator căn chỉnh hiện tại -->
+                    <span id="current-display-pill" class="text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 hidden sm:inline">Cỡ chuẩn • Căn trái</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <div id="timer" class="text-base sm:text-lg font-mono font-bold bg-slate-100 px-3 py-1 rounded-lg text-slate-700 border border-slate-200 shadow-inner">00:00</div>
+                    <button id="flag-question-btn" class="flex items-center px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-semibold rounded-lg transition-all text-xs sm:text-sm shadow-sm active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                        <span class="ml-1.5">Cắm cờ</span>
+                    </button>
+                </div>
             </div>
 
             <div class="flex-grow overflow-y-auto custom-scroll pr-2 flex flex-col mb-4 min-h-0">
@@ -247,6 +341,153 @@
             </div>
     </footer>
 
+        <!-- MODAL ĐĂNG NHẬP / ĐĂNG KÝ & ĐỒNG BỘ GOOGLE DRIVE -->
+    <div id="cloud-sync-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-content-scrollable bg-white p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh]">
+            <!-- Header Modal -->
+            <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold border border-blue-200 shadow-sm">
+                        ☁️
+                    </div>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-800">Đồng bộ Google Drive & Tài khoản</h2>
+                        <p class="text-xs text-gray-500">Bảo mật mã hóa đầu cuối (AES-256) • Đồng bộ dữ liệu ngầm đa thiết bị</p>
+                    </div>
+                </div>
+                <button id="close-cloud-modal-btn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 rounded-lg">✕</button>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-200 mb-4 text-xs sm:text-sm font-semibold">
+                <button id="cloud-tab-auth" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 transition-colors">🔐 Tài khoản & Mật khẩu</button>
+                <button id="cloud-tab-drive" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">☁️ Kết nối Google Drive</button>
+                <button id="cloud-tab-backup" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">⚙️ Quản trị & Đồng bộ</button>
+            </div>
+
+            <!-- TAB 1: ĐĂNG NHẬP / ĐĂNG KÝ (TÀI KHOẢN & MẬT KHẨU) -->
+            <div id="cloud-view-auth" class="space-y-4">
+                <div class="bg-blue-50/70 border border-blue-200 p-3 rounded-xl text-xs text-blue-900 leading-relaxed">
+                    <p class="font-bold mb-1">🛡️ Cơ chế bảo mật:</p>
+                    <p>Mỗi tài khoản Google Drive đi kèm <strong>1 mật khẩu do bạn tự đặt</strong>. Dữ liệu đề thi, tiến trình và lịch sử làm bài sẽ được <strong>mã hóa bằng mật khẩu này (AES-GCM 256)</strong> trước khi đẩy lên Google Drive. Chỉ khi nhập đúng tài khoản và mật khẩu thì mới có thể giải mã và khôi phục dữ liệu.</p>
+                </div>
+
+                <div id="auth-status-card" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-600 text-lg">✅</span>
+                        <div>
+                            <div class="text-xs text-gray-500">Đang đăng nhập tài khoản:</div>
+                            <div id="auth-current-user" class="font-bold text-slate-800 text-sm">user@gmail.com</div>
+                        </div>
+                    </div>
+                    <button id="btn-logout-account" class="px-3 py-1.5 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors">Đăng xuất</button>
+                </div>
+
+                <div id="auth-form-container" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tài khoản / Email liên kết Google Drive:</label>
+                        <input type="email" id="auth-input-email" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ví dụ: yourname@gmail.com">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Mật khẩu bảo vệ dữ liệu:</label>
+                        <div class="relative">
+                            <input type="password" id="auth-input-password" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10" placeholder="Nhập mật khẩu bảo vệ...">
+                            <button type="button" id="toggle-password-visibility-btn" class="absolute right-2.5 top-2.5 text-xs text-gray-500 hover:text-gray-700 font-bold select-none">👁️</button>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1">Ghi nhớ mật khẩu này để mở và giải mã dữ liệu khi đổi sang thiết bị khác.</p>
+                    </div>
+
+                    <div id="auth-error-msg" class="text-xs text-red-600 hidden bg-red-50 p-2 rounded border border-red-200"></div>
+                    <div id="auth-success-msg" class="text-xs text-emerald-700 hidden bg-emerald-50 p-2 rounded border border-emerald-200"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                        <button id="btn-login-and-restore" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                            <span>🔑 Đăng nhập & Khôi phục</span>
+                        </button>
+                        <button id="btn-register-new" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                            <span>✨ Đăng ký & Khởi tạo</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CẤU HÌNH GOOGLE DRIVE -->
+            <div id="cloud-view-drive" class="hidden space-y-4">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-700">Trạng thái Google OAuth:</span>
+                        <span id="google-conn-status" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Chưa kết nối</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-700">File sao lưu trên Google Drive:</span>
+                        <code class="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono text-[11px]">ap_trac_nghiem_cloud_backup.json</code>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <button id="btn-connect-google-drive" class="w-full py-3 px-4 bg-white hover:bg-gray-50 text-slate-800 border-2 border-slate-200 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                        <span>Xác thực liên kết Google Drive (1-Click)</span>
+                    </button>
+                    <p class="text-[11px] text-gray-500 text-center">Cho phép ứng dụng đọc và ghi duy nhất file sao lưu trắc nghiệm trên Google Drive của bạn.</p>
+                </div>
+
+                <!-- Cài đặt Google Client ID cá nhân -->
+                <details class="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs">
+                    <summary class="font-bold text-slate-700 cursor-pointer select-none">⚙️ Tùy chỉnh Google Client ID (Dành cho nhà phát triển / Chủ sở hữu)</summary>
+                    <div class="mt-2 space-y-2 pt-2 border-t border-gray-200">
+                        <p class="text-gray-600">Nếu bạn muốn dùng Google OAuth Client ID của riêng bạn, hãy dán vào đây:</p>
+                        <input type="text" id="input-google-client-id" class="w-full p-2 border border-gray-300 rounded font-mono text-xs" placeholder="xxxx.apps.googleusercontent.com">
+                        <div class="flex justify-end gap-2">
+                            <button id="btn-save-client-id" class="px-3 py-1 bg-slate-700 text-white rounded font-semibold text-xs">Lưu Client ID</button>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- TAB 3: QUẢN TRỊ & ĐỒNG BỘ NGẦM -->
+            <div id="cloud-view-backup" class="hidden space-y-3">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <div class="font-bold text-slate-800 text-xs sm:text-sm">Tự động đồng bộ ngầm (Background Auto-sync)</div>
+                        <div class="text-[11px] text-gray-500">Đồng bộ tự động khi nộp bài, nạp đề, hoặc định kỳ mỗi 45 giây</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-auto-sync" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <button id="btn-manual-sync-now" class="p-3 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95">
+                        <span>🚀 Đẩy lên Google Drive ngay</span>
+                    </button>
+                    <button id="btn-manual-fetch-now" class="p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95">
+                        <span>📥 Kéo dữ liệu từ Drive về máy</span>
+                    </button>
+                </div>
+
+                <div class="pt-2 border-t border-gray-200">
+                    <p class="font-bold text-xs text-slate-700 mb-2">💾 Sao lưu ngoại tuyến (Offline Vault Backup):</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button id="btn-export-offline-json" class="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg border border-gray-300 font-semibold flex items-center justify-center gap-1.5">
+                            <span>📦 Xuất file (.json) về máy</span>
+                        </button>
+                        <button id="btn-import-offline-json" class="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg border border-gray-300 font-semibold flex items-center justify-center gap-1.5">
+                            <span>📂 Nạp file (.json) từ máy</span>
+                        </button>
+                        <input type="file" id="offline-json-file-input" accept=".json" class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Close Button -->
+            <div class="text-right pt-3 border-t border-gray-200 mt-4">
+                <button id="btn-dismiss-cloud-modal" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-xs sm:text-sm font-semibold transition-colors">Đóng cửa sổ</button>
+            </div>
+        </div>
+    </div>
     <div id="confirm-submit-modal" class="modal-overlay hidden">
         <div class="modal-content text-center"> <p id="modal-message" class="text-lg mb-4">Bạn có chắc chắn muốn nộp bài không?</p>
             <div class="modal-buttons">
@@ -257,7 +498,7 @@
     </div>
 
     <div id="load-quiz-modal" class="modal-overlay hidden">
-        <div class="modal-content modal-content-scrollable bg-white p-5 rounded-lg shadow-xl w-11/12 md:w-4/5 lg:w-3/5 max-w-4xl">
+        <div class="modal-content modal-content-scrollable bg-white p-3 sm:p-5 rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-3 border-b mb-3 gap-2">
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -319,7 +560,7 @@
 
             <!-- View 1: Textarea -->
             <div id="modal-edit-view">
-                <textarea id="new-quiz-data-input" class="w-full h-64 p-3 border border-gray-300 rounded-lg font-mono text-xs md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Dán nội dung đề thi vào đây..."></textarea>
+                <textarea id="new-quiz-data-input" class="w-full h-64 p-3 border border-gray-300 rounded-lg font-mono text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Dán nội dung đề thi vào đây..."></textarea>
             </div>
 
             <!-- View 2: Live Preview -->
@@ -560,6 +801,953 @@
             }
         ];
 
+        
+        // =========================================================================
+        // BỘ ĐIỀU KHIỂN HIỂN THỊ & CĂN CHỈNH GIAO DIỆN (Display & Alignment Manager)
+        // =========================================================================
+        const DISPLAY_SETTINGS_KEY = 'quiz_display_settings_v1';
+        let currentFontSize = 'base'; // 'sm' | 'base' | 'lg' | 'xl'
+        let currentTextAlign = 'left'; // 'left' | 'justify'
+        let isMobileNavCollapsed = false;
+
+        function initDisplaySettings() {
+            try {
+                const saved = localStorage.getItem(DISPLAY_SETTINGS_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    currentFontSize = parsed.fontSize || 'base';
+                    currentTextAlign = parsed.textAlign || 'left';
+                }
+            } catch (e) { console.warn("Lỗi đọc cài đặt hiển thị:", e); }
+
+            applyDisplaySettings();
+            setupDisplayEventListeners();
+        }
+
+        function applyDisplaySettings() {
+            const body = document.body;
+            // Xóa các class cũ
+            ['font-size-sm', 'font-size-base', 'font-size-lg', 'font-size-xl'].forEach(c => body.classList.remove(c));
+            ['text-align-left', 'text-align-justify'].forEach(c => body.classList.remove(c));
+
+            // Thêm class mới
+            body.classList.add(`font-size-${currentFontSize}`);
+            body.classList.add(`text-align-${currentTextAlign}`);
+
+            // Cập nhật pill indicator
+            const pillEl = document.getElementById('current-display-pill');
+            if (pillEl) {
+                const sizeLabels = { sm: 'Cỡ nhỏ', base: 'Cỡ chuẩn', lg: 'Cỡ lớn', xl: 'Cỡ rất lớn' };
+                const alignLabels = { left: 'Căn trái', justify: 'Căn đều' };
+                pillEl.textContent = `${sizeLabels[currentFontSize] || 'Cỡ chuẩn'} • ${alignLabels[currentTextAlign] || 'Căn trái'}`;
+            }
+
+            // Lưu cài đặt
+            try {
+                localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
+                    fontSize: currentFontSize,
+                    textAlign: currentTextAlign
+                }));
+            } catch (e) {}
+        }
+
+        function setupDisplayEventListeners() {
+            const btnDec = document.getElementById('btn-font-decrease');
+            const btnReset = document.getElementById('btn-font-reset');
+            const btnInc = document.getElementById('btn-font-increase');
+            const btnAlign = document.getElementById('btn-align-toggle');
+            const btnMobileNav = document.getElementById('btn-mobile-nav-toggle');
+
+            const fontSizes = ['sm', 'base', 'lg', 'xl'];
+
+            if (btnDec) {
+                btnDec.addEventListener('click', () => {
+                    const idx = fontSizes.indexOf(currentFontSize);
+                    if (idx > 0) {
+                        currentFontSize = fontSizes[idx - 1];
+                        applyDisplaySettings();
+                    }
+                });
+            }
+
+            if (btnReset) {
+                btnReset.addEventListener('click', () => {
+                    currentFontSize = 'base';
+                    applyDisplaySettings();
+                });
+            }
+
+            if (btnInc) {
+                btnInc.addEventListener('click', () => {
+                    const idx = fontSizes.indexOf(currentFontSize);
+                    if (idx < fontSizes.length - 1) {
+                        currentFontSize = fontSizes[idx + 1];
+                        applyDisplaySettings();
+                    }
+                });
+            }
+
+            if (btnAlign) {
+                btnAlign.addEventListener('click', () => {
+                    currentTextAlign = (currentTextAlign === 'left') ? 'justify' : 'left';
+                    applyDisplaySettings();
+                });
+            }
+
+            if (btnMobileNav) {
+                btnMobileNav.addEventListener('click', () => {
+                    const navContainer = document.getElementById('navigation-grid')?.parentElement;
+                    if (navContainer) {
+                        isMobileNavCollapsed = !isMobileNavCollapsed;
+                        navContainer.classList.toggle('hidden', isMobileNavCollapsed);
+                        const label = document.getElementById('mobile-nav-label');
+                        if (label) label.textContent = isMobileNavCollapsed ? 'Hiện DS' : 'Ẩn DS';
+                    }
+                });
+            }
+        }
+
+        // =========================================================================
+        // HỆ THỐNG MÃ HÓA BẢO MẬT ĐẦU CUỐI (Web Crypto API AES-GCM 256-bit + PBKDF2)
+        // =========================================================================
+        const CryptoVault = {
+            bufferToBase64(buffer) {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            },
+
+            base64ToBuffer(base64) {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes;
+            },
+
+            async deriveKey(password, saltUint8) {
+                const enc = new TextEncoder();
+                const keyMaterial = await window.crypto.subtle.importKey(
+                    "raw",
+                    enc.encode(password),
+                    { name: "PBKDF2" },
+                    false,
+                    ["deriveBits", "deriveKey"]
+                );
+                return await window.crypto.subtle.deriveKey(
+                    {
+                        name: "PBKDF2",
+                        salt: saltUint8,
+                        iterations: 100000,
+                        hash: "SHA-256"
+                    },
+                    keyMaterial,
+                    { name: "AES-GCM", length: 256 },
+                    false,
+                    ["encrypt", "decrypt"]
+                );
+            },
+
+            async computeAuthVerifier(account, password, saltUint8) {
+                const enc = new TextEncoder();
+                const data = enc.encode(`${account.toLowerCase().trim()}:${password}:${this.bufferToBase64(saltUint8)}`);
+                const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+                return this.bufferToBase64(hashBuffer);
+            },
+
+            async encryptPayload(dataObj, account, password) {
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const key = await this.deriveKey(password, salt);
+                const authVerifier = await this.computeAuthVerifier(account, password, salt);
+
+                const enc = new TextEncoder();
+                const plaintext = JSON.stringify(dataObj);
+                const ciphertextBuffer = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    enc.encode(plaintext)
+                );
+
+                return {
+                    version: 2,
+                    app: "ap_trac_nghiem",
+                    account: account.toLowerCase().trim(),
+                    salt: this.bufferToBase64(salt),
+                    iv: this.bufferToBase64(iv),
+                    authVerifier: authVerifier,
+                    ciphertext: this.bufferToBase64(ciphertextBuffer),
+                    lastModified: Date.now(),
+                    summary: {
+                        totalQuestions: (dataObj.quizDataForCurrentSession || []).length,
+                        answeredCount: Object.keys(dataObj.userSelections || {}).length,
+                        isSubmitted: !!dataObj.isSubmitted,
+                        score: dataObj.score || 0
+                    }
+                };
+            },
+
+            async decryptPayload(cloudPackage, account, password) {
+                if (!cloudPackage || !cloudPackage.ciphertext || !cloudPackage.salt || !cloudPackage.iv) {
+                    throw new Error("Gói dữ liệu đám mây không hợp lệ hoặc bị hỏng.");
+                }
+
+                const salt = this.base64ToBuffer(cloudPackage.salt);
+                const iv = this.base64ToBuffer(cloudPackage.iv);
+                const ciphertext = this.base64ToBuffer(cloudPackage.ciphertext);
+
+                // Kiểm tra verifier xác thực tài khoản & mật khẩu
+                if (cloudPackage.authVerifier) {
+                    const expectedVerifier = await this.computeAuthVerifier(account, password, salt);
+                    if (expectedVerifier !== cloudPackage.authVerifier) {
+                        throw new Error("MẬT KHẨU KHÔNG CHÍNH XÁC hoặc tài khoản không khớp!");
+                    }
+                }
+
+                const key = await this.deriveKey(password, salt);
+                try {
+                    const decryptedBuffer = await window.crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv: iv },
+                        key,
+                        ciphertext
+                    );
+                    const dec = new TextDecoder();
+                    const jsonStr = dec.decode(decryptedBuffer);
+                    return JSON.parse(jsonStr);
+                } catch (e) {
+                    throw new Error("Giải mã thất bại: Mật khẩu không đúng hoặc dữ liệu đã bị chỉnh sửa.");
+                }
+            }
+        };
+
+        // =========================================================================
+        // GOOGLE DRIVE API MANAGER (GIS Token Client & Drive v3 Storage)
+        // =========================================================================
+        const GoogleDriveAPI = {
+            CLIENT_ID_KEY: 'google_drive_oauth_client_id_v1',
+            DEFAULT_CLIENT_ID: '768923055938-16evch4h12l9f1d06e23n4v03dcl79a2.apps.googleusercontent.com',
+            FILE_NAME: 'ap_trac_nghiem_cloud_backup.json',
+            accessToken: null,
+            tokenClient: null,
+
+            getClientId() {
+                try {
+                    return localStorage.getItem(this.CLIENT_ID_KEY) || this.DEFAULT_CLIENT_ID;
+                } catch (e) {
+                    return this.DEFAULT_CLIENT_ID;
+                }
+            },
+
+            setClientId(newId) {
+                if (newId && newId.trim()) {
+                    localStorage.setItem(this.CLIENT_ID_KEY, newId.trim());
+                    this.tokenClient = null; // Re-initialize with new ID
+                }
+            },
+
+            initTokenClient(onSuccess, onError) {
+                if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                    console.warn("Google Identity Services script chưa sẵn sàng.");
+                    if (onError) onError(new Error("Google Identity Services chưa tải xong. Vui lòng tải lại trang hoặc kiểm tra kết nối mạng."));
+                    return;
+                }
+
+                try {
+                    this.tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: this.getClientId(),
+                        scope: 'https://www.googleapis.com/auth/drive.file',
+                        callback: (resp) => {
+                            if (resp.error) {
+                                console.error("Google Auth error:", resp);
+                                if (onError) onError(resp);
+                                return;
+                            }
+                            this.accessToken = resp.access_token;
+                            try { sessionStorage.setItem('gdrive_access_token', resp.access_token); } catch (e) {}
+                            if (onSuccess) onSuccess(resp.access_token);
+                        }
+                    });
+                } catch (err) {
+                    console.error("Lỗi khởi tạo GIS Token Client:", err);
+                    if (onError) onError(err);
+                }
+            },
+
+            requestToken(onSuccess, onError) {
+                // Kiểm tra token trong session còn không
+                const cached = sessionStorage.getItem('gdrive_access_token');
+                if (cached && !this.accessToken) {
+                    this.accessToken = cached;
+                }
+
+                if (!this.tokenClient) {
+                    this.initTokenClient(onSuccess, onError);
+                }
+
+                if (this.tokenClient) {
+                    this.tokenClient.requestAccessToken({ prompt: '' });
+                }
+            },
+
+            async findBackupFile() {
+                if (!this.accessToken) throw new Error("Chưa có Google Access Token.");
+                const query = encodeURIComponent(`name = '${this.FILE_NAME}' and trashed = false`);
+                const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,size)&spaces=drive`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                });
+
+                if (res.status === 401) {
+                    this.accessToken = null;
+                    throw new Error("Token Google hết hạn. Vui lòng xác thực lại.");
+                }
+
+                const data = await res.json();
+                if (data.files && data.files.length > 0) {
+                    return data.files[0];
+                }
+                return null;
+            },
+
+            async downloadBackupContent(fileId) {
+                if (!this.accessToken) throw new Error("Chưa có Google Access Token.");
+                const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                });
+
+                if (!res.ok) throw new Error(`Lỗi tải file từ Google Drive: ${res.statusText}`);
+                return await res.json();
+            },
+
+            async uploadBackupContent(contentObj, existingFileId = null) {
+                if (!this.accessToken) throw new Error("Chưa có Google Access Token.");
+                const contentStr = typeof contentObj === 'string' ? contentObj : JSON.stringify(contentObj, null, 2);
+
+                if (existingFileId) {
+                    // Cập nhật file hiện tại qua PATCH
+                    const url = `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=media`;
+                    const res = await fetch(url, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${this.accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: contentStr
+                    });
+                    if (!res.ok) throw new Error(`Lỗi cập nhật Google Drive: ${res.statusText}`);
+                    return await res.json();
+                } else {
+                    // Tạo file mới với multipart upload
+                    const metadata = {
+                        name: this.FILE_NAME,
+                        mimeType: 'application/json',
+                        description: 'Bản sao lưu ứng dụng trắc nghiệm ôn luyện (mã hóa AES-256)'
+                    };
+
+                    const boundary = '-------314159265358979323846';
+                    const delimiter = `\r\n--${boundary}\r\n`;
+                    const closeDelim = `\r\n--${boundary}--`;
+
+                    const multipartRequestBody =
+                        delimiter +
+                        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                        JSON.stringify(metadata) +
+                        delimiter +
+                        'Content-Type: application/json\r\n\r\n' +
+                        contentStr +
+                        closeDelim;
+
+                    const url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.accessToken}`,
+                            'Content-Type': `multipart/related; boundary=${boundary}`
+                        },
+                        body: multipartRequestBody
+                    });
+
+                    if (!res.ok) throw new Error(`Lỗi tạo file trên Google Drive: ${res.statusText}`);
+                    return await res.json();
+                }
+            }
+        };
+
+        // =========================================================================
+        // TRÌNH QUẢN LÝ ĐỒNG BỘ DỮ LIỆU NGẦM (Background Cloud Sync Manager)
+        // =========================================================================
+        const AUTH_USER_KEY = 'quiz_auth_user_v2';
+
+        const CloudSyncManager = {
+            currentUser: null,       // { email: '', password: '', driveFileId: null }
+            isSyncing: false,
+            isDirty: false,
+            autoSyncEnabled: true,
+            syncDebounceTimer: null,
+            heartbeatInterval: null,
+            lastSyncedTimestamp: 0,
+
+            init() {
+                // Khôi phục phiên đăng nhập nếu có trong sessionStorage
+                try {
+                    const saved = sessionStorage.getItem(AUTH_USER_KEY);
+                    if (saved) {
+                        this.currentUser = JSON.parse(saved);
+                        this.updateAuthUI();
+                    }
+                } catch (e) {}
+
+                this.setupEventListeners();
+                this.startHeartbeat();
+                this.updateSyncBadge();
+            },
+
+            setupEventListeners() {
+                // Mở / đóng modal đồng bộ
+                const syncBtn = document.getElementById('cloud-sync-btn');
+                const closeBtn = document.getElementById('close-cloud-modal-btn');
+                const dismissBtn = document.getElementById('btn-dismiss-cloud-modal');
+                const modal = document.getElementById('cloud-sync-modal');
+
+                if (syncBtn && modal) {
+                    syncBtn.addEventListener('click', () => {
+                        modal.classList.remove('hidden');
+                        this.updateAuthUI();
+                    });
+                }
+                if (closeBtn && modal) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+                if (dismissBtn && modal) dismissBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+                // Tab switching trong Cloud Modal
+                const tabAuth = document.getElementById('cloud-tab-auth');
+                const tabDrive = document.getElementById('cloud-tab-drive');
+                const tabBackup = document.getElementById('cloud-tab-backup');
+
+                const viewAuth = document.getElementById('cloud-view-auth');
+                const viewDrive = document.getElementById('cloud-view-drive');
+                const viewBackup = document.getElementById('cloud-view-backup');
+
+                const setTab = (activeTab, activeView) => {
+                    [tabAuth, tabDrive, tabBackup].forEach(t => {
+                        if (t) {
+                            t.classList.remove('border-blue-600', 'text-blue-600');
+                            t.classList.add('border-transparent', 'text-gray-500');
+                        }
+                    });
+                    [viewAuth, viewDrive, viewBackup].forEach(v => {
+                        if (v) v.classList.add('hidden');
+                    });
+                    if (activeTab) {
+                        activeTab.classList.remove('border-transparent', 'text-gray-500');
+                        activeTab.classList.add('border-blue-600', 'text-blue-600');
+                    }
+                    if (activeView) activeView.classList.remove('hidden');
+                };
+
+                if (tabAuth) tabAuth.addEventListener('click', () => setTab(tabAuth, viewAuth));
+                if (tabDrive) tabDrive.addEventListener('click', () => setTab(tabDrive, viewDrive));
+                if (tabBackup) tabBackup.addEventListener('click', () => setTab(tabBackup, viewBackup));
+
+                // Nút hiện/ẩn mật khẩu
+                const togglePassBtn = document.getElementById('toggle-password-visibility-btn');
+                const passInput = document.getElementById('auth-input-password');
+                if (togglePassBtn && passInput) {
+                    togglePassBtn.addEventListener('click', () => {
+                        passInput.type = passInput.type === 'password' ? 'text' : 'password';
+                        togglePassBtn.textContent = passInput.type === 'password' ? '👁️' : '🔒';
+                    });
+                }
+
+                // Nút đăng nhập & khôi phục
+                const btnLogin = document.getElementById('btn-login-and-restore');
+                if (btnLogin) btnLogin.addEventListener('click', () => this.handleLoginAndRestore());
+
+                // Nút đăng ký & khởi tạo
+                const btnRegister = document.getElementById('btn-register-new');
+                if (btnRegister) btnRegister.addEventListener('click', () => this.handleRegister());
+
+                // Nút đăng xuất
+                const btnLogout = document.getElementById('btn-logout-account');
+                if (btnLogout) btnLogout.addEventListener('click', () => this.handleLogout());
+
+                // Nút kết nối Google Drive (1-Click)
+                const btnConnectDrive = document.getElementById('btn-connect-google-drive');
+                if (btnConnectDrive) {
+                    btnConnectDrive.addEventListener('click', () => {
+                        GoogleDriveAPI.requestToken(
+                            () => {
+                                this.updateAuthUI();
+                                alert("Đã kết nối thành công với tài khoản Google Drive!");
+                                this.checkAndSyncAfterAuth();
+                            },
+                            (err) => {
+                                alert("Lỗi kết nối Google Drive: " + (err.message || err.error || "Không xác định"));
+                            }
+                        );
+                    });
+                }
+
+                // Lưu Custom Client ID
+                const btnSaveClientId = document.getElementById('btn-save-client-id');
+                const inputClientId = document.getElementById('input-google-client-id');
+                if (btnSaveClientId && inputClientId) {
+                    inputClientId.value = GoogleDriveAPI.getClientId();
+                    btnSaveClientId.addEventListener('click', () => {
+                        const val = inputClientId.value.trim();
+                        if (val) {
+                            GoogleDriveAPI.setClientId(val);
+                            alert("Đã cập nhật Google Client ID mới!");
+                        }
+                    });
+                }
+
+                // Toggle Auto-sync
+                const toggleAuto = document.getElementById('toggle-auto-sync');
+                if (toggleAuto) {
+                    toggleAuto.addEventListener('change', (e) => {
+                        this.autoSyncEnabled = e.target.checked;
+                        if (this.autoSyncEnabled) this.markDirtyAndQueueSync(1000);
+                    });
+                }
+
+                // Đẩy thủ công lên Drive
+                const btnManualSync = document.getElementById('btn-manual-sync-now');
+                if (btnManualSync) {
+                    btnManualSync.addEventListener('click', () => this.pushToCloud(true));
+                }
+
+                // Kéo thủ công từ Drive
+                const btnManualFetch = document.getElementById('btn-manual-fetch-now');
+                if (btnManualFetch) {
+                    btnManualFetch.addEventListener('click', () => this.fetchFromCloud(true));
+                }
+
+                // Xuất file offline (.json)
+                const btnExportOffline = document.getElementById('btn-export-offline-json');
+                if (btnExportOffline) {
+                    btnExportOffline.addEventListener('click', () => this.exportOfflineJson());
+                }
+
+                // Nạp file offline (.json)
+                const btnImportOffline = document.getElementById('btn-import-offline-json');
+                const fileInput = document.getElementById('offline-json-file-input');
+                if (btnImportOffline && fileInput) {
+                    btnImportOffline.addEventListener('click', () => fileInput.click());
+                    fileInput.addEventListener('change', (e) => this.importOfflineJson(e));
+                }
+            },
+
+            updateAuthUI() {
+                const statusCard = document.getElementById('auth-status-card');
+                const formContainer = document.getElementById('auth-form-container');
+                const currentUserEl = document.getElementById('auth-current-user');
+                const connStatus = document.getElementById('google-conn-status');
+
+                if (this.currentUser) {
+                    if (statusCard) statusCard.classList.remove('hidden');
+                    if (formContainer) formContainer.classList.add('hidden');
+                    if (currentUserEl) currentUserEl.textContent = this.currentUser.email;
+                } else {
+                    if (statusCard) statusCard.classList.add('hidden');
+                    if (formContainer) formContainer.classList.remove('hidden');
+                }
+
+                if (connStatus) {
+                    if (GoogleDriveAPI.accessToken) {
+                        connStatus.textContent = "Đã xác thực";
+                        connStatus.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800";
+                    } else {
+                        connStatus.textContent = "Chưa kết nối";
+                        connStatus.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800";
+                    }
+                }
+            },
+
+            showAuthMsg(msg, isError = false) {
+                const errBox = document.getElementById('auth-error-msg');
+                const okBox = document.getElementById('auth-success-msg');
+                if (isError) {
+                    if (errBox) { errBox.textContent = msg; errBox.classList.remove('hidden'); }
+                    if (okBox) okBox.classList.add('hidden');
+                } else {
+                    if (okBox) { okBox.textContent = msg; okBox.classList.remove('hidden'); }
+                    if (errBox) errBox.classList.add('hidden');
+                }
+            },
+
+            updateSyncBadge() {
+                const badge = document.getElementById('cloud-sync-btn');
+                const icon = document.getElementById('sync-icon');
+                const label = document.getElementById('sync-label');
+                if (!badge || !icon || !label) return;
+
+                if (this.isSyncing) {
+                    icon.textContent = '🔄';
+                    icon.classList.add('animate-sync-spin');
+                    label.textContent = 'Đang đồng bộ...';
+                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all shadow-sm";
+                } else if (!this.currentUser) {
+                    icon.textContent = '☁️';
+                    icon.classList.remove('animate-sync-spin');
+                    label.textContent = 'Cloud Sync';
+                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600 transition-all shadow-sm";
+                } else if (!GoogleDriveAPI.accessToken) {
+                    icon.textContent = '⚠️';
+                    icon.classList.remove('animate-sync-spin');
+                    label.textContent = 'Nối Drive';
+                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-amber-950 transition-all shadow-sm";
+                } else {
+                    icon.textContent = '🟢';
+                    icon.classList.remove('animate-sync-spin');
+                    label.textContent = 'Đã đồng bộ';
+                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 hover:bg-emerald-600 text-emerald-100 transition-all shadow-sm";
+                }
+            },
+
+            async handleLoginAndRestore() {
+                const email = document.getElementById('auth-input-email')?.value.trim();
+                const pass = document.getElementById('auth-input-password')?.value;
+
+                if (!email || !pass) {
+                    this.showAuthMsg("Vui lòng nhập đầy đủ tài khoản và mật khẩu bảo mật.", true);
+                    return;
+                }
+
+                this.showAuthMsg("Đang kết nối và xác thực...");
+
+                // Yêu cầu kết nối Google Drive nếu chưa có token
+                if (!GoogleDriveAPI.accessToken) {
+                    GoogleDriveAPI.requestToken(
+                        async () => {
+                            this.currentUser = { email, password: pass };
+                            sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                            this.updateAuthUI();
+                            await this.fetchFromCloud(true);
+                        },
+                        (err) => {
+                            this.showAuthMsg("Kết nối Google Drive thất bại: " + (err.message || "Bị từ chối"), true);
+                        }
+                    );
+                } else {
+                    this.currentUser = { email, password: pass };
+                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                    this.updateAuthUI();
+                    await this.fetchFromCloud(true);
+                }
+            },
+
+            async handleRegister() {
+                const email = document.getElementById('auth-input-email')?.value.trim();
+                const pass = document.getElementById('auth-input-password')?.value;
+
+                if (!email || !pass) {
+                    this.showAuthMsg("Vui lòng nhập tài khoản và đặt mật khẩu bảo vệ.", true);
+                    return;
+                }
+                if (pass.length < 4) {
+                    this.showAuthMsg("Mật khẩu nên có tối thiểu 4 ký tự để đảm bảo an toàn.", true);
+                    return;
+                }
+
+                // Yêu cầu token Drive
+                if (!GoogleDriveAPI.accessToken) {
+                    GoogleDriveAPI.requestToken(
+                        async () => {
+                            this.currentUser = { email, password: pass };
+                            sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                            this.updateAuthUI();
+                            await this.pushToCloud(true);
+                        },
+                        (err) => {
+                            this.showAuthMsg("Lỗi xác thực Google: " + (err.message || "Bị từ chối"), true);
+                        }
+                    );
+                } else {
+                    this.currentUser = { email, password: pass };
+                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                    this.updateAuthUI();
+                    await this.pushToCloud(true);
+                }
+            },
+
+            handleLogout() {
+                if (confirm("Bạn có chắc muốn đăng xuất khỏi tài khoản đồng bộ đám mây trên thiết bị này?")) {
+                    this.currentUser = null;
+                    sessionStorage.removeItem(AUTH_USER_KEY);
+                    GoogleDriveAPI.accessToken = null;
+                    sessionStorage.removeItem('gdrive_access_token');
+                    this.updateAuthUI();
+                    this.updateSyncBadge();
+                    this.showAuthMsg("Đã đăng xuất tài khoản an toàn.");
+                }
+            },
+
+            async checkAndSyncAfterAuth() {
+                if (this.currentUser && GoogleDriveAPI.accessToken) {
+                    await this.fetchFromCloud(false);
+                }
+            },
+
+            // Tập hợp toàn bộ dữ liệu trạng thái hiện tại
+            getCurrentSnapshot() {
+                return {
+                    quizDataForCurrentSession: quizDataForCurrentSession || [],
+                    currentQuizQuestions: currentQuizQuestions || [],
+                    currentQuestionIndex: currentQuestionIndex || 0,
+                    userSelections: userSelections || {},
+                    flaggedQuestions: Array.from(flaggedQuestions || []),
+                    secondsElapsed: secondsElapsed || 0,
+                    score: score || 0,
+                    isSubmitted: !!isSubmitted,
+                    attemptNumber: attemptNumber || 1,
+                    attemptHistory: attemptHistory || []
+                };
+            },
+
+            // Khôi phục dữ liệu vào ứng dụng
+            restoreFromSnapshot(snapshot) {
+                if (!snapshot) return;
+
+                if (Array.isArray(snapshot.quizDataForCurrentSession) && snapshot.quizDataForCurrentSession.length > 0) {
+                    quizDataForCurrentSession = snapshot.quizDataForCurrentSession;
+                }
+                if (Array.isArray(snapshot.currentQuizQuestions) && snapshot.currentQuizQuestions.length > 0) {
+                    currentQuizQuestions = snapshot.currentQuizQuestions;
+                }
+                if (typeof snapshot.currentQuestionIndex === 'number') {
+                    currentQuestionIndex = snapshot.currentQuestionIndex;
+                }
+                if (snapshot.userSelections) {
+                    userSelections = snapshot.userSelections;
+                }
+                if (Array.isArray(snapshot.flaggedQuestions)) {
+                    flaggedQuestions = new Set(snapshot.flaggedQuestions);
+                }
+                if (typeof snapshot.secondsElapsed === 'number') {
+                    secondsElapsed = snapshot.secondsElapsed;
+                }
+                if (typeof snapshot.score === 'number') {
+                    score = snapshot.score;
+                }
+                if (typeof snapshot.isSubmitted === 'boolean') {
+                    isSubmitted = snapshot.isSubmitted;
+                }
+                if (Array.isArray(snapshot.attemptHistory)) {
+                    attemptHistory = snapshot.attemptHistory;
+                    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(attemptHistory)); } catch (e) {}
+                }
+
+                // Cập nhật giao diện sau khi khôi phục
+                try {
+                    initializeQuiz(true);
+                } catch (e) {
+                    console.error("Lỗi áp dụng snapshot:", e);
+                }
+                this.isDirty = false;
+            },
+
+            // Đẩy dữ liệu lên Google Drive (mã hóa với mật khẩu)
+            async pushToCloud(isManual = false) {
+                if (!this.currentUser) {
+                    if (isManual) alert("Vui lòng đăng nhập tài khoản và mật khẩu trước khi đồng bộ.");
+                    return;
+                }
+                if (!GoogleDriveAPI.accessToken) {
+                    if (isManual) {
+                        GoogleDriveAPI.requestToken(() => this.pushToCloud(isManual));
+                    }
+                    return;
+                }
+                if (this.isSyncing) return;
+
+                this.isSyncing = true;
+                this.updateSyncBadge();
+
+                try {
+                    const snapshot = this.getCurrentSnapshot();
+                    const encryptedPackage = await CryptoVault.encryptPayload(
+                        snapshot,
+                        this.currentUser.email,
+                        this.currentUser.password
+                    );
+
+                    let existingFile = null;
+                    if (this.currentUser.driveFileId) {
+                        existingFile = { id: this.currentUser.driveFileId };
+                    } else {
+                        existingFile = await GoogleDriveAPI.findBackupFile();
+                        if (existingFile) this.currentUser.driveFileId = existingFile.id;
+                    }
+
+                    const result = await GoogleDriveAPI.uploadBackupContent(encryptedPackage, existingFile ? existingFile.id : null);
+                    if (result && result.id) {
+                        this.currentUser.driveFileId = result.id;
+                        sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                    }
+
+                    this.lastSyncedTimestamp = Date.now();
+                    this.isDirty = false;
+                    this.showAuthMsg("Đã đồng bộ lên Google Drive lúc " + new Date().toLocaleTimeString());
+                    if (isManual) alert("Đã đẩy và đồng bộ dữ liệu lên Google Drive thành công!");
+                } catch (err) {
+                    console.error("Lỗi đồng bộ đẩy lên Cloud:", err);
+                    this.showAuthMsg("Lỗi đồng bộ: " + err.message, true);
+                    if (isManual) alert("Lỗi khi đẩy lên Google Drive: " + err.message);
+                } finally {
+                    this.isSyncing = false;
+                    this.updateSyncBadge();
+                }
+            },
+
+            // Kéo dữ liệu từ Google Drive (giải mã với mật khẩu)
+            async fetchFromCloud(isManual = false) {
+                if (!this.currentUser) {
+                    if (isManual) alert("Vui lòng đăng nhập tài khoản và mật khẩu.");
+                    return;
+                }
+                if (!GoogleDriveAPI.accessToken) {
+                    if (isManual) {
+                        GoogleDriveAPI.requestToken(() => this.fetchFromCloud(isManual));
+                    }
+                    return;
+                }
+                if (this.isSyncing) return;
+
+                this.isSyncing = true;
+                this.updateSyncBadge();
+
+                try {
+                    const file = await GoogleDriveAPI.findBackupFile();
+                    if (!file) {
+                        this.showAuthMsg("Chưa tìm thấy file sao lưu trên Google Drive. Hãy nạp đề hoặc nhấn Đẩy lên Drive trước.");
+                        if (isManual) alert("Chưa có file sao lưu nào trên Google Drive của bạn. Bạn có thể nhấn 'Đẩy lên Google Drive' để tạo bản sao lưu đầu tiên.");
+                        return;
+                    }
+
+                    this.currentUser.driveFileId = file.id;
+                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+
+                    const encryptedPackage = await GoogleDriveAPI.downloadBackupContent(file.id);
+
+                    // Giải mã với mật khẩu và tài khoản
+                    const decryptedSnapshot = await CryptoVault.decryptPayload(
+                        encryptedPackage,
+                        this.currentUser.email,
+                        this.currentUser.password
+                    );
+
+                    this.restoreFromSnapshot(decryptedSnapshot);
+                    this.lastSyncedTimestamp = encryptedPackage.lastModified || Date.now();
+                    this.showAuthMsg("Khôi phục thành công dữ liệu từ Google Drive!");
+                    if (isManual) alert("Đã khôi phục hoàn tất đề thi, tiến trình và kết quả từ Google Drive!");
+                } catch (err) {
+                    console.error("Lỗi kéo dữ liệu Cloud:", err);
+                    this.showAuthMsg(err.message, true);
+                    if (isManual) alert("Không thể giải mã dữ liệu: " + err.message);
+                } finally {
+                    this.isSyncing = false;
+                    this.updateSyncBadge();
+                }
+            },
+
+            // Đánh dấu dữ liệu đã thay đổi và lên lịch đồng bộ thông minh
+            markDirtyAndQueueSync(delayMs = 8000) {
+                this.isDirty = true;
+                if (!this.autoSyncEnabled || !this.currentUser || !GoogleDriveAPI.accessToken) {
+                    return;
+                }
+
+                clearTimeout(this.syncDebounceTimer);
+                this.syncDebounceTimer = setTimeout(() => {
+                    if (this.isDirty) {
+                        this.pushToCloud(false);
+                    }
+                }, delayMs);
+            },
+
+            // Nhịp tim định kỳ kiểm tra & đồng bộ ngầm mỗi 45 giây
+            startHeartbeat() {
+                if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+                this.heartbeatInterval = setInterval(async () => {
+                    if (!this.autoSyncEnabled || !this.currentUser || !GoogleDriveAPI.accessToken) {
+                        return;
+                    }
+                    if (this.isDirty) {
+                        console.log("AutoSync heartbeat: Đang đồng bộ thay đổi ngầm...");
+                        await this.pushToCloud(false);
+                    }
+                }, 45000);
+            },
+
+            // Xuất file JSON ngoại tuyến
+            async exportOfflineJson() {
+                try {
+                    const snapshot = this.getCurrentSnapshot();
+                    let payload;
+                    let filename = `trac_nghiem_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+                    if (this.currentUser && this.currentUser.password) {
+                        payload = await CryptoVault.encryptPayload(snapshot, this.currentUser.email, this.currentUser.password);
+                    } else {
+                        payload = { version: 2, plainSnapshot: snapshot, exportedAt: Date.now() };
+                    }
+
+                    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    alert("Lỗi xuất file: " + e.message);
+                }
+            },
+
+            // Nạp file JSON ngoại tuyến
+            async importOfflineJson(event) {
+                const file = event.target.files && event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = JSON.parse(e.target.result);
+                        if (content.ciphertext) {
+                            // File bị mã hóa -> yêu cầu mật khẩu
+                            const email = prompt("Nhập tài khoản / Email mã hóa của file:", (this.currentUser && this.currentUser.email) || "");
+                            if (!email) return;
+                            const pass = prompt("Nhập mật khẩu giải mã file:");
+                            if (!pass) return;
+
+                            const decrypted = await CryptoVault.decryptPayload(content, email, pass);
+                            this.restoreFromSnapshot(decrypted);
+                            alert("Đã giải mã và khôi phục thành công từ file JSON!");
+                        } else if (content.plainSnapshot) {
+                            this.restoreFromSnapshot(content.plainSnapshot);
+                            alert("Đã khôi phục thành công từ file sao lưu!");
+                        } else {
+                            throw new Error("Định dạng file sao lưu không hợp lệ.");
+                        }
+                    } catch (err) {
+                        alert("Lỗi nạp file: " + err.message);
+                    } finally {
+                        event.target.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
         let quizDataForCurrentSession = [];
 
         // --- BIẾN TOÀN CỤC ---
@@ -795,6 +1983,9 @@
                     });
                 }
                 if (typeof saveCurrentState === 'function') saveCurrentState();
+            if (typeof CloudSyncManager !== 'undefined') {
+                CloudSyncManager.markDirtyAndQueueSync(8000);
+            }
             }
 
             if (currentQuizQuestions.length === 0) {
@@ -1259,6 +2450,9 @@
 
             renderAttemptHistory();
             displayQuestion(currentQuestionIndex);
+            if (typeof CloudSyncManager !== 'undefined') {
+                CloudSyncManager.pushToCloud(false); // Đồng bộ kết quả lên Cloud ngay khi nộp bài
+            }
         }
 
         // --- LÀM LẠI ---
@@ -1560,6 +2754,7 @@ Giải thích:
                         if (loadQuizModalEl) loadQuizModalEl.classList.add('hidden');
                         if (parseErrorMessageEl) parseErrorMessageEl.classList.add('hidden');
                         console.log("New quiz loaded and initialized successfully!");
+                        if (typeof CloudSyncManager !== "undefined") { CloudSyncManager.pushToCloud(false); }
                     } else {
                         if (parseErrorMessageEl) {
                             parseErrorMessageEl.textContent = "Không thể phân tích dữ liệu hoặc không có câu hỏi nào hợp lệ. Vui lòng kiểm tra định dạng.";
@@ -1625,6 +2820,11 @@ Giải thích:
             try {
                 localStorage.setItem(CURRENT_STATE_STORAGE_KEY, JSON.stringify(state));
             } catch (e) { console.error("Lỗi lưu trạng thái:", e); }
+
+            // Tự động kích hoạt đồng bộ ngầm lên Cloud
+            if (typeof CloudSyncManager !== 'undefined') {
+                CloudSyncManager.markDirtyAndQueueSync(8000);
+            }
         }
 
         function loadCurrentState() {
@@ -1710,6 +2910,10 @@ Giải thích:
         document.addEventListener('DOMContentLoaded', () => {
             console.log("DOM fully loaded. Initializing application...");
             
+            // Khởi tạo tùy chọn hiển thị và căn chỉnh
+            if (typeof initDisplaySettings === 'function') initDisplaySettings();
+            if (typeof CloudSyncManager !== 'undefined') CloudSyncManager.init();
+
             // Khôi phục và theo dõi kích thước UI
             loadUISettings();
             
