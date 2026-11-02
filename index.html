@@ -147,22 +147,104 @@
             }
         }
 
-        /* TÙY CHỌN CĂN CHỈNH CỠ CHỮ & CĂN LỀ GIAO DIỆN */
-        .font-size-sm #question-text { font-size: 1.05rem !important; line-height: 1.55; }
-        .font-size-sm .option-content { font-size: 0.92rem !important; }
-        .font-size-sm .explanation-box { font-size: 0.88rem !important; }
+        /* TÙY CHỌN CĂN CHỈNH CỠ CHỮ TOÀN DIỆN GIAO DIỆN BÀI THI */
+        /* CỠ NHỎ (A-) */
+        .font-size-sm #question-text,
+        .font-size-sm #question-text *,
+        .font-size-sm #question-text div,
+        .font-size-sm #question-text p,
+        .font-size-sm #question-text span {
+            font-size: 1.05rem !important;
+            line-height: 1.55 !important;
+        }
+        .font-size-sm .option-content,
+        .font-size-sm .option-content * {
+            font-size: 0.95rem !important;
+        }
+        .font-size-sm .explanation-box,
+        .font-size-sm .explanation-box *,
+        .font-size-sm .explanation-box div,
+        .font-size-sm .explanation-box span,
+        .font-size-sm .explanation-box p {
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+        }
 
-        .font-size-base #question-text { font-size: 1.3rem !important; line-height: 1.6; }
-        .font-size-base .option-content { font-size: 1.02rem !important; }
-        .font-size-base .explanation-box { font-size: 0.95rem !important; }
+        /* CỠ CHUẨN (A) */
+        .font-size-base #question-text,
+        .font-size-base #question-text *,
+        .font-size-base #question-text div,
+        .font-size-base #question-text p,
+        .font-size-base #question-text span {
+            font-size: 1.35rem !important;
+            line-height: 1.65 !important;
+        }
+        .font-size-base .option-content,
+        .font-size-base .option-content * {
+            font-size: 1.15rem !important;
+        }
+        .font-size-base .explanation-box,
+        .font-size-base .explanation-box *,
+        .font-size-base .explanation-box div,
+        .font-size-base .explanation-box span,
+        .font-size-base .explanation-box p {
+            font-size: 1.05rem !important;
+            line-height: 1.6 !important;
+        }
 
-        .font-size-lg #question-text { font-size: 1.55rem !important; line-height: 1.65; }
-        .font-size-lg .option-content { font-size: 1.15rem !important; }
-        .font-size-lg .explanation-box { font-size: 1.05rem !important; }
+        /* CỠ LỚN (A+) */
+        .font-size-lg #question-text,
+        .font-size-lg #question-text *,
+        .font-size-lg #question-text div,
+        .font-size-lg #question-text p,
+        .font-size-lg #question-text span {
+            font-size: 1.75rem !important;
+            line-height: 1.7 !important;
+        }
+        .font-size-lg .option-content,
+        .font-size-lg .option-content * {
+            font-size: 1.45rem !important;
+        }
+        .font-size-lg .explanation-box,
+        .font-size-lg .explanation-box *,
+        .font-size-lg .explanation-box div,
+        .font-size-lg .explanation-box span,
+        .font-size-lg .explanation-box p {
+            font-size: 1.25rem !important;
+            line-height: 1.7 !important;
+        }
 
-        .font-size-xl #question-text { font-size: 1.85rem !important; line-height: 1.7; }
-        .font-size-xl .option-content { font-size: 1.3rem !important; }
-        .font-size-xl .explanation-box { font-size: 1.15rem !important; }
+        /* CỠ RẤT LỚN (A++) */
+        .font-size-xl #question-text,
+        .font-size-xl #question-text *,
+        .font-size-xl #question-text div,
+        .font-size-xl #question-text p,
+        .font-size-xl #question-text span {
+            font-size: 2.25rem !important;
+            line-height: 1.75 !important;
+        }
+        .font-size-xl .option-content,
+        .font-size-xl .option-content * {
+            font-size: 1.75rem !important;
+        }
+        .font-size-xl .explanation-box,
+        .font-size-xl .explanation-box *,
+        .font-size-xl .explanation-box div,
+        .font-size-xl .explanation-box span,
+        .font-size-xl .explanation-box p {
+            font-size: 1.45rem !important;
+            line-height: 1.75 !important;
+        }
+
+        /* Phân cấp tiêu đề theo cỡ */
+        .font-size-sm .rich-h1 { font-size: 1.25rem !important; }
+        .font-size-sm .rich-h2 { font-size: 1.15rem !important; }
+        .font-size-base .rich-h1 { font-size: 1.6rem !important; }
+        .font-size-base .rich-h2 { font-size: 1.4rem !important; }
+        .font-size-lg .rich-h1 { font-size: 2.1rem !important; }
+        .font-size-lg .rich-h2 { font-size: 1.85rem !important; }
+        .font-size-xl .rich-h1 { font-size: 2.6rem !important; }
+        .font-size-xl .rich-h2 { font-size: 2.3rem !important; }
 
         .text-align-left #question-text, .text-align-left .option-content, .text-align-left .explanation-box {
             text-align: left !important;
@@ -414,33 +496,54 @@
 
             <!-- TAB 2: CẤU HÌNH GOOGLE DRIVE -->
             <div id="cloud-view-drive" class="hidden space-y-4">
+                <!-- Trạng thái kết nối Google Drive -->
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-slate-700">Trạng thái Google OAuth:</span>
+                        <span class="font-bold text-slate-700">Trạng thái Google Drive:</span>
                         <span id="google-conn-status" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Chưa kết nối</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-slate-700">File sao lưu trên Google Drive:</span>
+                        <span class="font-bold text-slate-700">File trên Google Drive:</span>
                         <code class="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono text-[11px]">ap_trac_nghiem_cloud_backup.json</code>
                     </div>
                 </div>
 
-                <div class="space-y-2">
-                    <button id="btn-connect-google-drive" class="w-full py-3 px-4 bg-white hover:bg-gray-50 text-slate-800 border-2 border-slate-200 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-                        <span>Xác thực liên kết Google Drive (1-Click)</span>
-                    </button>
-                    <p class="text-[11px] text-gray-500 text-center">Cho phép ứng dụng đọc và ghi duy nhất file sao lưu trắc nghiệm trên Google Drive của bạn.</p>
+                <!-- PHƯƠNG THỨC 1: GOOGLE APPS SCRIPT WEB APP (KHUYÊN DÙNG, KHÔNG BỊ LỖI 401) -->
+                <div class="border border-blue-200 bg-blue-50/50 p-4 rounded-xl space-y-3 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">⭐</span>
+                        <div>
+                            <h3 class="font-bold text-blue-900 text-sm">Cách 1: Kết nối siêu tốc bằng Google Apps Script (Khuyên dùng)</h3>
+                            <p class="text-slate-600 text-[11px]">Không cần tài khoản lập trình viên Google Cloud • 100% không bị lỗi 401: invalid_client • Lưu trực tiếp vào Drive của bạn</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-blue-200 space-y-2">
+                        <p class="font-semibold text-slate-700">3 Bước thực hiện nhanh (chỉ mất 1 phút):</p>
+                        <ol class="list-decimal list-inside space-y-1.5 text-slate-600">
+                            <li>Bấm <button type="button" id="btn-copy-gas-code" class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded border border-blue-300 hover:bg-blue-200">📋 Sao chép mã Apps Script</button></li>
+                            <li>Bấm <a href="https://script.google.com/home/start" target="_blank" class="px-2 py-0.5 bg-indigo-100 text-indigo-800 font-bold rounded border border-indigo-300 hover:bg-indigo-200 inline-flex items-center gap-1">🔗 Mở script.google.com ↗</a> &gt; Bấm <em>Dự án mới</em> &gt; Dán mã &gt; Bấm <em>Triển khai (Deploy)</em> &gt; <em>Tùy chọn triển khai mới</em> &gt; Chọn loại <em>Ứng dụng web (Web app)</em> &gt; Mục Ai có quyền truy cập: chọn <strong>Bất kỳ ai (Anyone)</strong> &gt; Bấm <em>Triển khai</em>.</li>
+                            <li>Sao chép <strong>URL Ứng dụng web</strong> (dạng <code>.../exec</code>) dán vào ô dưới đây:</li>
+                        </ol>
+
+                        <div class="pt-1">
+                            <input type="url" id="input-gas-url" class="w-full p-2.5 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-blue-500" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span id="gas-test-status" class="text-xs text-gray-500"></span>
+                            <button type="button" id="btn-save-gas-url" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all shadow-sm active:scale-95">💾 Lưu & Kết nối Google Drive</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Cài đặt Google Client ID cá nhân -->
+                <!-- PHƯƠNG THỨC 2: GOOGLE OAUTH 2.0 (DÀNH CHO NHÀ PHÁT TRIỂN) -->
                 <details class="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs">
-                    <summary class="font-bold text-slate-700 cursor-pointer select-none">⚙️ Tùy chỉnh Google Client ID (Dành cho nhà phát triển / Chủ sở hữu)</summary>
+                    <summary class="font-bold text-slate-700 cursor-pointer select-none">⚙️ Cách 2: Kết nối bằng Google OAuth 2.0 Client ID (Dành cho nhà phát triển)</summary>
                     <div class="mt-2 space-y-2 pt-2 border-t border-gray-200">
-                        <p class="text-gray-600">Nếu bạn muốn dùng Google OAuth Client ID của riêng bạn, hãy dán vào đây:</p>
+                        <p class="text-slate-600 leading-relaxed">Nếu bạn muốn dùng Google OAuth 2.0 với cửa sổ xác thực popup của Google, bạn cần tạo OAuth 2.0 Web Client ID tại <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-blue-600 underline">Google Cloud Console</a> và thêm tên miền <code>https://magashoang23.github.io</code> vào mục <em>Authorized JavaScript origins</em>.</p>
                         <input type="text" id="input-google-client-id" class="w-full p-2 border border-gray-300 rounded font-mono text-xs" placeholder="xxxx.apps.googleusercontent.com">
-                        <div class="flex justify-end gap-2">
-                            <button id="btn-save-client-id" class="px-3 py-1 bg-slate-700 text-white rounded font-semibold text-xs">Lưu Client ID</button>
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button type="button" id="btn-connect-google-drive" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold">Xác thực Google OAuth</button>
                         </div>
                     </div>
                 </details>
@@ -713,21 +816,19 @@
 
                 // 1. Tiêu đề cấp 1 (# )
                 const h1Match = trimmed.match(/^#\s+(.+)$/);
-                if (h1Match) {
-                    const content = renderInlineRichText(escapeHtml(h1Match[1]));
-                    const sizeClass = isQuestion ? 'text-xl md:text-2xl' : 'text-base md:text-lg';
-                    htmlLines.push(`<div class="${sizeClass} font-bold text-slate-800 mt-2 mb-1 pb-1 border-b border-slate-200 ${indentClass}">${content}</div>`);
-                    continue;
-                }
+            if (h1Match) {
+                const content = renderInlineRichText(escapeHtml(h1Match[1]));
+                htmlLines.push(`<div class="rich-h1 font-bold text-slate-800 mt-2 mb-1 pb-1 border-b border-slate-200 ${indentClass}">${content}</div>`);
+                continue;
+            }
 
                 // 2. Tiêu đề cấp 2 (## )
                 const h2Match = trimmed.match(/^##\s+(.+)$/);
-                if (h2Match) {
-                    const content = renderInlineRichText(escapeHtml(h2Match[1]));
-                    const sizeClass = isQuestion ? 'text-lg md:text-xl' : 'text-sm md:text-base';
-                    htmlLines.push(`<div class="${sizeClass} font-bold text-slate-800 mt-1.5 mb-1 ${indentClass}">${content}</div>`);
-                    continue;
-                }
+            if (h2Match) {
+                const content = renderInlineRichText(escapeHtml(h2Match[1]));
+                htmlLines.push(`<div class="rich-h2 font-bold text-slate-800 mt-1.5 mb-1 ${indentClass}">${content}</div>`);
+                continue;
+            }
 
                 // 3. Tiêu đề cấp 3 (### )
                 const h3Match = trimmed.match(/^###\s+(.+)$/);
@@ -773,11 +874,9 @@
                 }
 
                 // 8. Dòng văn bản bình thường (giữ thụt lề nếu có)
-                const content = renderInlineRichText(escapeHtml(trimmed));
-                const baseTextClass = isQuestion 
-                    ? 'text-base md:text-lg font-medium text-slate-800' 
-                    : 'text-xs md:text-sm text-slate-700';
-                htmlLines.push(`<div class="my-0.5 ${baseTextClass} leading-relaxed ${indentClass}">${content}</div>`);
+            const content = renderInlineRichText(escapeHtml(trimmed));
+            const baseTextClass = isQuestion ? 'font-medium text-slate-800' : 'text-slate-700';
+            htmlLines.push(`<div class="my-0.5 ${baseTextClass} leading-relaxed ${indentClass}">${content}</div>`);
             }
 
             return htmlLines.join('');
@@ -1027,38 +1126,91 @@
         // =========================================================================
         // GOOGLE DRIVE API MANAGER (GIS Token Client & Drive v3 Storage)
         // =========================================================================
+        // =========================================================================
+        // GOOGLE DRIVE API MANAGER (Google Apps Script Webhook & GIS OAuth)
+        // =========================================================================
         const GoogleDriveAPI = {
-            CLIENT_ID_KEY: 'google_drive_oauth_client_id_v1',
-            DEFAULT_CLIENT_ID: '768923055938-16evch4h12l9f1d06e23n4v03dcl79a2.apps.googleusercontent.com',
+            CLIENT_ID_KEY: 'google_drive_oauth_client_id_v2',
+            GAS_URL_KEY: 'google_drive_gas_webhook_url_v2',
             FILE_NAME: 'ap_trac_nghiem_cloud_backup.json',
             accessToken: null,
             tokenClient: null,
 
+            getGasUrl() {
+                try {
+                    return localStorage.getItem(this.GAS_URL_KEY) || '';
+                } catch (e) { return ''; }
+            },
+
+            setGasUrl(url) {
+                if (url) {
+                    localStorage.setItem(this.GAS_URL_KEY, url.trim());
+                } else {
+                    localStorage.removeItem(this.GAS_URL_KEY);
+                }
+            },
+
             getClientId() {
                 try {
-                    return localStorage.getItem(this.CLIENT_ID_KEY) || this.DEFAULT_CLIENT_ID;
-                } catch (e) {
-                    return this.DEFAULT_CLIENT_ID;
-                }
+                    return localStorage.getItem(this.CLIENT_ID_KEY) || '';
+                } catch (e) { return ''; }
             },
 
             setClientId(newId) {
                 if (newId && newId.trim()) {
                     localStorage.setItem(this.CLIENT_ID_KEY, newId.trim());
-                    this.tokenClient = null; // Re-initialize with new ID
+                    this.tokenClient = null;
+                } else {
+                    localStorage.removeItem(this.CLIENT_ID_KEY);
+                    this.tokenClient = null;
                 }
             },
 
+            isConnected() {
+                return !!(this.getGasUrl() || this.accessToken);
+            },
+
+            // 1. Giao tiếp qua Google Apps Script Web App (Không cần OAuth Client ID, không bao giờ bị 401)
+            async saveViaGAS(payload) {
+                const gasUrl = this.getGasUrl();
+                if (!gasUrl) throw new Error("Chưa cấu hình URL Google Apps Script.");
+
+                const res = await fetch(gasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!data.success && data.error) throw new Error(data.error);
+                return data;
+            },
+
+            async fetchViaGAS() {
+                const gasUrl = this.getGasUrl();
+                if (!gasUrl) throw new Error("Chưa cấu hình URL Google Apps Script.");
+
+                const res = await fetch(gasUrl, { method: 'GET' });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                return data;
+            },
+
+            // 2. Giao tiếp qua Google OAuth GIS
             initTokenClient(onSuccess, onError) {
+                const clientId = this.getClientId();
+                if (!clientId) {
+                    if (onError) onError(new Error("Chưa cấu hình Google OAuth Client ID. Vui lòng vào Tab 'Kết nối Google Drive' để nhập Client ID của bạn."));
+                    return;
+                }
+
                 if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                    console.warn("Google Identity Services script chưa sẵn sàng.");
-                    if (onError) onError(new Error("Google Identity Services chưa tải xong. Vui lòng tải lại trang hoặc kiểm tra kết nối mạng."));
+                    if (onError) onError(new Error("Google Identity Services script chưa tải xong. Vui lòng kiểm tra kết nối mạng."));
                     return;
                 }
 
                 try {
                     this.tokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: this.getClientId(),
+                        client_id: clientId,
                         scope: 'https://www.googleapis.com/auth/drive.file',
                         callback: (resp) => {
                             if (resp.error) {
@@ -1072,22 +1224,30 @@
                         }
                     });
                 } catch (err) {
-                    console.error("Lỗi khởi tạo GIS Token Client:", err);
+                    console.error("Lỗi khởi tạo GIS:", err);
                     if (onError) onError(err);
                 }
             },
 
             requestToken(onSuccess, onError) {
-                // Kiểm tra token trong session còn không
                 const cached = sessionStorage.getItem('gdrive_access_token');
                 if (cached && !this.accessToken) {
                     this.accessToken = cached;
+                }
+                if (this.accessToken) {
+                    if (onSuccess) onSuccess(this.accessToken);
+                    return;
+                }
+
+                const clientId = this.getClientId();
+                if (!clientId) {
+                    if (onError) onError(new Error("Chưa nhập Google Client ID."));
+                    return;
                 }
 
                 if (!this.tokenClient) {
                     this.initTokenClient(onSuccess, onError);
                 }
-
                 if (this.tokenClient) {
                     this.tokenClient.requestAccessToken({ prompt: '' });
                 }
@@ -1108,21 +1268,15 @@
                 }
 
                 const data = await res.json();
-                if (data.files && data.files.length > 0) {
-                    return data.files[0];
-                }
+                if (data.files && data.files.length > 0) return data.files[0];
                 return null;
             },
 
             async downloadBackupContent(fileId) {
                 if (!this.accessToken) throw new Error("Chưa có Google Access Token.");
                 const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
-                });
-
-                if (!res.ok) throw new Error(`Lỗi tải file từ Google Drive: ${res.statusText}`);
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.accessToken}` } });
+                if (!res.ok) throw new Error(`Lỗi tải file từ Drive: ${res.statusText}`);
                 return await res.json();
             },
 
@@ -1131,7 +1285,6 @@
                 const contentStr = typeof contentObj === 'string' ? contentObj : JSON.stringify(contentObj, null, 2);
 
                 if (existingFileId) {
-                    // Cập nhật file hiện tại qua PATCH
                     const url = `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=media`;
                     const res = await fetch(url, {
                         method: 'PATCH',
@@ -1144,25 +1297,19 @@
                     if (!res.ok) throw new Error(`Lỗi cập nhật Google Drive: ${res.statusText}`);
                     return await res.json();
                 } else {
-                    // Tạo file mới với multipart upload
                     const metadata = {
                         name: this.FILE_NAME,
                         mimeType: 'application/json',
                         description: 'Bản sao lưu ứng dụng trắc nghiệm ôn luyện (mã hóa AES-256)'
                     };
-
                     const boundary = '-------314159265358979323846';
-                    const delimiter = `\r\n--${boundary}\r\n`;
-                    const closeDelim = `\r\n--${boundary}--`;
-
+                    const delimiter = "\r\n--" + boundary + "\r\n";
+                    const closeDelim = "\r\n--" + boundary + "--";
                     const multipartRequestBody =
-                        delimiter +
-                        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                        JSON.stringify(metadata) +
-                        delimiter +
-                        'Content-Type: application/json\r\n\r\n' +
-                        contentStr +
-                        closeDelim;
+                        delimiter + "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+                        JSON.stringify(metadata) + delimiter +
+                        "Content-Type: application/json\r\n\r\n" +
+                        contentStr + closeDelim;
 
                     const url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
                     const res = await fetch(url, {
@@ -1173,8 +1320,7 @@
                         },
                         body: multipartRequestBody
                     });
-
-                    if (!res.ok) throw new Error(`Lỗi tạo file trên Google Drive: ${res.statusText}`);
+                    if (!res.ok) throw new Error(`Lỗi tạo file trên Drive: ${res.statusText}`);
                     return await res.json();
                 }
             }
@@ -1184,6 +1330,41 @@
         // TRÌNH QUẢN LÝ ĐỒNG BỘ DỮ LIỆU NGẦM (Background Cloud Sync Manager)
         // =========================================================================
         const AUTH_USER_KEY = 'quiz_auth_user_v2';
+        const GAS_CODE_SNIPPET = `function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var fileName = "ap_trac_nghiem_cloud_backup.json";
+    var files = DriveApp.getFilesByName(fileName);
+    var file;
+    if (files.hasNext()) {
+      file = files.next();
+      file.setContent(JSON.stringify(data, null, 2));
+    } else {
+      file = DriveApp.createFile(fileName, JSON.stringify(data, null, 2), "application/json");
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: true, fileId: file.getId(), modifiedTime: file.getLastUpdated().getTime() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    var fileName = "ap_trac_nghiem_cloud_backup.json";
+    var files = DriveApp.getFilesByName(fileName);
+    if (files.hasNext()) {
+      var file = files.next();
+      var content = file.getBlob().getDataAsString();
+      return ContentService.createTextOutput(content).setMimeType(ContentService.MimeType.JSON);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify({ error: "File not found" })).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
 
         const CloudSyncManager = {
             currentUser: null,       // { email: '', password: '', driveFileId: null }
@@ -1195,9 +1376,8 @@
             lastSyncedTimestamp: 0,
 
             init() {
-                // Khôi phục phiên đăng nhập nếu có trong sessionStorage
                 try {
-                    const saved = sessionStorage.getItem(AUTH_USER_KEY);
+                    const saved = sessionStorage.getItem(AUTH_USER_KEY) || localStorage.getItem(AUTH_USER_KEY);
                     if (saved) {
                         this.currentUser = JSON.parse(saved);
                         this.updateAuthUI();
@@ -1210,7 +1390,6 @@
             },
 
             setupEventListeners() {
-                // Mở / đóng modal đồng bộ
                 const syncBtn = document.getElementById('cloud-sync-btn');
                 const closeBtn = document.getElementById('close-cloud-modal-btn');
                 const dismissBtn = document.getElementById('btn-dismiss-cloud-modal');
@@ -1225,7 +1404,7 @@
                 if (closeBtn && modal) closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
                 if (dismissBtn && modal) dismissBtn.addEventListener('click', () => modal.classList.add('hidden'));
 
-                // Tab switching trong Cloud Modal
+                // Tab switching
                 const tabAuth = document.getElementById('cloud-tab-auth');
                 const tabDrive = document.getElementById('cloud-tab-drive');
                 const tabBackup = document.getElementById('cloud-tab-backup');
@@ -1255,6 +1434,70 @@
                 if (tabDrive) tabDrive.addEventListener('click', () => setTab(tabDrive, viewDrive));
                 if (tabBackup) tabBackup.addEventListener('click', () => setTab(tabBackup, viewBackup));
 
+                // Nút sao chép mã Google Apps Script
+                const btnCopyGas = document.getElementById('btn-copy-gas-code');
+                if (btnCopyGas) {
+                    btnCopyGas.addEventListener('click', () => {
+                        navigator.clipboard.writeText(GAS_CODE_SNIPPET).then(() => {
+                            btnCopyGas.textContent = "✅ Đã sao chép mã!";
+                            setTimeout(() => { btnCopyGas.textContent = "📋 Sao chép mã Apps Script"; }, 3000);
+                        }).catch(() => {
+                            prompt("Sao chép mã Google Apps Script tại đây:", GAS_CODE_SNIPPET);
+                        });
+                    });
+                }
+
+                // Lưu & Kiểm tra kết nối Google Apps Script
+                const btnSaveGas = document.getElementById('btn-save-gas-url');
+                const inputGas = document.getElementById('input-gas-url');
+                const gasStatus = document.getElementById('gas-test-status');
+
+                if (inputGas) {
+                    inputGas.value = GoogleDriveAPI.getGasUrl();
+                }
+
+                if (btnSaveGas && inputGas) {
+                    btnSaveGas.addEventListener('click', async () => {
+                        const url = inputGas.value.trim();
+                        if (!url) {
+                            GoogleDriveAPI.setGasUrl('');
+                            this.updateAuthUI();
+                            this.updateSyncBadge();
+                            if (gasStatus) gasStatus.textContent = "Đã xóa cấu hình Apps Script.";
+                            return;
+                        }
+
+                        if (!url.startsWith('https://script.google.com/macros/s/')) {
+                            alert("URL không đúng định dạng Google Apps Script Web App. Nó phải bắt đầu bằng https://script.google.com/macros/s/...");
+                            return;
+                        }
+
+                        if (gasStatus) gasStatus.textContent = "Đang kiểm tra kết nối Google Drive...";
+                        try {
+                            GoogleDriveAPI.setGasUrl(url);
+                            // Test fetch
+                            await GoogleDriveAPI.fetchViaGAS();
+                            if (gasStatus) gasStatus.textContent = "✅ Kết nối Google Drive thành công!";
+                            this.updateAuthUI();
+                            this.updateSyncBadge();
+                            alert("Kết nối Google Drive thành công! Bạn có thể bắt đầu đồng bộ dữ liệu.");
+                            if (this.currentUser) {
+                                this.fetchFromCloud(false);
+                            }
+                        } catch (e) {
+                            if (e.message && e.message.includes("File not found")) {
+                                if (gasStatus) gasStatus.textContent = "✅ Kết nối thành công (Chưa có file sao lưu)!";
+                                this.updateAuthUI();
+                                this.updateSyncBadge();
+                                alert("Kết nối Google Drive thành công! Chưa có bản sao lưu nào, ứng dụng sẽ tạo mới khi bạn làm bài.");
+                            } else {
+                                if (gasStatus) gasStatus.textContent = "❌ Lỗi: " + e.message;
+                                alert("Lỗi kết nối Web App: " + e.message + "\nVui lòng đảm bảo đã chọn 'Ai có quyền truy cập: Bất kỳ ai (Anyone)' khi triển khai trên Apps Script.");
+                            }
+                        }
+                    });
+                }
+
                 // Nút hiện/ẩn mật khẩu
                 const togglePassBtn = document.getElementById('toggle-password-visibility-btn');
                 const passInput = document.getElementById('auth-input-password');
@@ -1277,34 +1520,30 @@
                 const btnLogout = document.getElementById('btn-logout-account');
                 if (btnLogout) btnLogout.addEventListener('click', () => this.handleLogout());
 
-                // Nút kết nối Google Drive (1-Click)
-                const btnConnectDrive = document.getElementById('btn-connect-google-drive');
-                if (btnConnectDrive) {
-                    btnConnectDrive.addEventListener('click', () => {
+                // Google OAuth GIS nút
+                const btnConnectOAuth = document.getElementById('btn-connect-google-drive');
+                const inputClientId = document.getElementById('input-google-client-id');
+                if (inputClientId) inputClientId.value = GoogleDriveAPI.getClientId();
+
+                if (btnConnectOAuth && inputClientId) {
+                    btnConnectOAuth.addEventListener('click', () => {
+                        const val = inputClientId.value.trim();
+                        if (!val) {
+                            alert("Vui lòng nhập Google OAuth Client ID của bạn trước khi bấm xác thực.");
+                            return;
+                        }
+                        GoogleDriveAPI.setClientId(val);
                         GoogleDriveAPI.requestToken(
                             () => {
                                 this.updateAuthUI();
-                                alert("Đã kết nối thành công với tài khoản Google Drive!");
-                                this.checkAndSyncAfterAuth();
+                                this.updateSyncBadge();
+                                alert("Đã kết nối thành công với tài khoản Google Drive qua OAuth 2.0!");
+                                if (this.currentUser) this.fetchFromCloud(false);
                             },
                             (err) => {
-                                alert("Lỗi kết nối Google Drive: " + (err.message || err.error || "Không xác định"));
+                                alert("Lỗi xác thực Google OAuth: " + (err.message || "Bị từ chối"));
                             }
                         );
-                    });
-                }
-
-                // Lưu Custom Client ID
-                const btnSaveClientId = document.getElementById('btn-save-client-id');
-                const inputClientId = document.getElementById('input-google-client-id');
-                if (btnSaveClientId && inputClientId) {
-                    inputClientId.value = GoogleDriveAPI.getClientId();
-                    btnSaveClientId.addEventListener('click', () => {
-                        const val = inputClientId.value.trim();
-                        if (val) {
-                            GoogleDriveAPI.setClientId(val);
-                            alert("Đã cập nhật Google Client ID mới!");
-                        }
                     });
                 }
 
@@ -1317,25 +1556,18 @@
                     });
                 }
 
-                // Đẩy thủ công lên Drive
+                // Đẩy thủ công
                 const btnManualSync = document.getElementById('btn-manual-sync-now');
-                if (btnManualSync) {
-                    btnManualSync.addEventListener('click', () => this.pushToCloud(true));
-                }
+                if (btnManualSync) btnManualSync.addEventListener('click', () => this.pushToCloud(true));
 
-                // Kéo thủ công từ Drive
+                // Kéo thủ công
                 const btnManualFetch = document.getElementById('btn-manual-fetch-now');
-                if (btnManualFetch) {
-                    btnManualFetch.addEventListener('click', () => this.fetchFromCloud(true));
-                }
+                if (btnManualFetch) btnManualFetch.addEventListener('click', () => this.fetchFromCloud(true));
 
-                // Xuất file offline (.json)
+                // Offline Export/Import
                 const btnExportOffline = document.getElementById('btn-export-offline-json');
-                if (btnExportOffline) {
-                    btnExportOffline.addEventListener('click', () => this.exportOfflineJson());
-                }
+                if (btnExportOffline) btnExportOffline.addEventListener('click', () => this.exportOfflineJson());
 
-                // Nạp file offline (.json)
                 const btnImportOffline = document.getElementById('btn-import-offline-json');
                 const fileInput = document.getElementById('offline-json-file-input');
                 if (btnImportOffline && fileInput) {
@@ -1360,8 +1592,11 @@
                 }
 
                 if (connStatus) {
-                    if (GoogleDriveAPI.accessToken) {
-                        connStatus.textContent = "Đã xác thực";
+                    if (GoogleDriveAPI.getGasUrl()) {
+                        connStatus.textContent = "Đã kết nối (Apps Script)";
+                        connStatus.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800";
+                    } else if (GoogleDriveAPI.accessToken) {
+                        connStatus.textContent = "Đã kết nối (Google OAuth)";
                         connStatus.className = "px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800";
                     } else {
                         connStatus.textContent = "Chưa kết nối";
@@ -1398,7 +1633,7 @@
                     icon.classList.remove('animate-sync-spin');
                     label.textContent = 'Cloud Sync';
                     badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600 transition-all shadow-sm";
-                } else if (!GoogleDriveAPI.accessToken) {
+                } else if (!GoogleDriveAPI.isConnected()) {
                     icon.textContent = '⚠️';
                     icon.classList.remove('animate-sync-spin');
                     label.textContent = 'Nối Drive';
@@ -1416,30 +1651,26 @@
                 const pass = document.getElementById('auth-input-password')?.value;
 
                 if (!email || !pass) {
-                    this.showAuthMsg("Vui lòng nhập đầy đủ tài khoản và mật khẩu bảo mật.", true);
+                    this.showAuthMsg("Vui lòng nhập tài khoản và mật khẩu bảo mật.", true);
                     return;
                 }
 
-                this.showAuthMsg("Đang kết nối và xác thực...");
+                // Lưu thông tin phiên đăng nhập
+                this.currentUser = { email, password: pass };
+                sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                this.updateAuthUI();
+                this.updateSyncBadge();
 
-                // Yêu cầu kết nối Google Drive nếu chưa có token
-                if (!GoogleDriveAPI.accessToken) {
-                    GoogleDriveAPI.requestToken(
-                        async () => {
-                            this.currentUser = { email, password: pass };
-                            sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
-                            this.updateAuthUI();
-                            await this.fetchFromCloud(true);
-                        },
-                        (err) => {
-                            this.showAuthMsg("Kết nối Google Drive thất bại: " + (err.message || "Bị từ chối"), true);
-                        }
-                    );
-                } else {
-                    this.currentUser = { email, password: pass };
-                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
-                    this.updateAuthUI();
+                // Nếu đã kết nối Google Drive (qua Apps Script hoặc OAuth)
+                if (GoogleDriveAPI.isConnected()) {
+                    this.showAuthMsg("Đang kết nối Google Drive và giải mã dữ liệu...");
                     await this.fetchFromCloud(true);
+                } else {
+                    this.showAuthMsg("Đã đăng nhập tài khoản an toàn! Dữ liệu đang được bảo vệ bằng mật khẩu trên máy này.");
+                    alert("✅ Đăng nhập tài khoản thành công!\n\nBạn chưa kết nối Google Drive. Ứng dụng sẽ chuyển bạn sang tab 'Kết nối Google Drive' để kết nối chỉ trong 1 phút.");
+                    const tabDrive = document.getElementById('cloud-tab-drive');
+                    if (tabDrive) tabDrive.click();
                 }
             },
 
@@ -1452,35 +1683,32 @@
                     return;
                 }
                 if (pass.length < 4) {
-                    this.showAuthMsg("Mật khẩu nên có tối thiểu 4 ký tự để đảm bảo an toàn.", true);
+                    this.showAuthMsg("Mật khẩu nên có tối thiểu 4 ký tự.", true);
                     return;
                 }
 
-                // Yêu cầu token Drive
-                if (!GoogleDriveAPI.accessToken) {
-                    GoogleDriveAPI.requestToken(
-                        async () => {
-                            this.currentUser = { email, password: pass };
-                            sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
-                            this.updateAuthUI();
-                            await this.pushToCloud(true);
-                        },
-                        (err) => {
-                            this.showAuthMsg("Lỗi xác thực Google: " + (err.message || "Bị từ chối"), true);
-                        }
-                    );
-                } else {
-                    this.currentUser = { email, password: pass };
-                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
-                    this.updateAuthUI();
+                this.currentUser = { email, password: pass };
+                sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                this.updateAuthUI();
+                this.updateSyncBadge();
+
+                if (GoogleDriveAPI.isConnected()) {
+                    this.showAuthMsg("Đang khởi tạo và đẩy dữ liệu lên Google Drive...");
                     await this.pushToCloud(true);
+                } else {
+                    this.showAuthMsg("Đã khởi tạo tài khoản! Vui lòng kết nối Google Drive để đồng bộ.");
+                    alert("✨ Đăng ký tài khoản thành công!\n\nĐể đồng bộ dữ liệu qua các thiết bị khác, vui lòng kết nối Google Drive ở tab kế tiếp.");
+                    const tabDrive = document.getElementById('cloud-tab-drive');
+                    if (tabDrive) tabDrive.click();
                 }
             },
 
             handleLogout() {
-                if (confirm("Bạn có chắc muốn đăng xuất khỏi tài khoản đồng bộ đám mây trên thiết bị này?")) {
+                if (confirm("Bạn có chắc muốn đăng xuất khỏi tài khoản đồng bộ trên thiết bị này?")) {
                     this.currentUser = null;
                     sessionStorage.removeItem(AUTH_USER_KEY);
+                    localStorage.removeItem(AUTH_USER_KEY);
                     GoogleDriveAPI.accessToken = null;
                     sessionStorage.removeItem('gdrive_access_token');
                     this.updateAuthUI();
@@ -1489,13 +1717,6 @@
                 }
             },
 
-            async checkAndSyncAfterAuth() {
-                if (this.currentUser && GoogleDriveAPI.accessToken) {
-                    await this.fetchFromCloud(false);
-                }
-            },
-
-            // Tập hợp toàn bộ dữ liệu trạng thái hiện tại
             getCurrentSnapshot() {
                 return {
                     quizDataForCurrentSession: quizDataForCurrentSession || [],
@@ -1511,7 +1732,6 @@
                 };
             },
 
-            // Khôi phục dữ liệu vào ứng dụng
             restoreFromSnapshot(snapshot) {
                 if (!snapshot) return;
 
@@ -1544,24 +1764,24 @@
                     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(attemptHistory)); } catch (e) {}
                 }
 
-                // Cập nhật giao diện sau khi khôi phục
                 try {
                     initializeQuiz(true);
                 } catch (e) {
-                    console.error("Lỗi áp dụng snapshot:", e);
+                    console.error("Lỗi khôi phục snapshot:", e);
                 }
                 this.isDirty = false;
             },
 
-            // Đẩy dữ liệu lên Google Drive (mã hóa với mật khẩu)
             async pushToCloud(isManual = false) {
                 if (!this.currentUser) {
                     if (isManual) alert("Vui lòng đăng nhập tài khoản và mật khẩu trước khi đồng bộ.");
                     return;
                 }
-                if (!GoogleDriveAPI.accessToken) {
+                if (!GoogleDriveAPI.isConnected()) {
                     if (isManual) {
-                        GoogleDriveAPI.requestToken(() => this.pushToCloud(isManual));
+                        alert("Chưa kết nối Google Drive. Vui lòng chuyển sang tab 'Kết nối Google Drive' để cấu hình.");
+                        const tabDrive = document.getElementById('cloud-tab-drive');
+                        if (tabDrive) tabDrive.click();
                     }
                     return;
                 }
@@ -1578,18 +1798,23 @@
                         this.currentUser.password
                     );
 
-                    let existingFile = null;
-                    if (this.currentUser.driveFileId) {
-                        existingFile = { id: this.currentUser.driveFileId };
-                    } else {
-                        existingFile = await GoogleDriveAPI.findBackupFile();
-                        if (existingFile) this.currentUser.driveFileId = existingFile.id;
-                    }
-
-                    const result = await GoogleDriveAPI.uploadBackupContent(encryptedPackage, existingFile ? existingFile.id : null);
-                    if (result && result.id) {
-                        this.currentUser.driveFileId = result.id;
-                        sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                    if (GoogleDriveAPI.getGasUrl()) {
+                        // Lưu qua Google Apps Script Web App
+                        await GoogleDriveAPI.saveViaGAS(encryptedPackage);
+                    } else if (GoogleDriveAPI.accessToken) {
+                        // Lưu qua GIS OAuth
+                        let existingFile = null;
+                        if (this.currentUser.driveFileId) {
+                            existingFile = { id: this.currentUser.driveFileId };
+                        } else {
+                            existingFile = await GoogleDriveAPI.findBackupFile();
+                            if (existingFile) this.currentUser.driveFileId = existingFile.id;
+                        }
+                        const result = await GoogleDriveAPI.uploadBackupContent(encryptedPackage, existingFile ? existingFile.id : null);
+                        if (result && result.id) {
+                            this.currentUser.driveFileId = result.id;
+                            sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                        }
                     }
 
                     this.lastSyncedTimestamp = Date.now();
@@ -1597,7 +1822,7 @@
                     this.showAuthMsg("Đã đồng bộ lên Google Drive lúc " + new Date().toLocaleTimeString());
                     if (isManual) alert("Đã đẩy và đồng bộ dữ liệu lên Google Drive thành công!");
                 } catch (err) {
-                    console.error("Lỗi đồng bộ đẩy lên Cloud:", err);
+                    console.error("Lỗi đẩy lên Cloud:", err);
                     this.showAuthMsg("Lỗi đồng bộ: " + err.message, true);
                     if (isManual) alert("Lỗi khi đẩy lên Google Drive: " + err.message);
                 } finally {
@@ -1606,15 +1831,16 @@
                 }
             },
 
-            // Kéo dữ liệu từ Google Drive (giải mã với mật khẩu)
             async fetchFromCloud(isManual = false) {
                 if (!this.currentUser) {
                     if (isManual) alert("Vui lòng đăng nhập tài khoản và mật khẩu.");
                     return;
                 }
-                if (!GoogleDriveAPI.accessToken) {
+                if (!GoogleDriveAPI.isConnected()) {
                     if (isManual) {
-                        GoogleDriveAPI.requestToken(() => this.fetchFromCloud(isManual));
+                        alert("Chưa kết nối Google Drive. Vui lòng chuyển sang tab 'Kết nối Google Drive'.");
+                        const tabDrive = document.getElementById('cloud-tab-drive');
+                        if (tabDrive) tabDrive.click();
                     }
                     return;
                 }
@@ -1624,19 +1850,23 @@
                 this.updateSyncBadge();
 
                 try {
-                    const file = await GoogleDriveAPI.findBackupFile();
-                    if (!file) {
-                        this.showAuthMsg("Chưa tìm thấy file sao lưu trên Google Drive. Hãy nạp đề hoặc nhấn Đẩy lên Drive trước.");
-                        if (isManual) alert("Chưa có file sao lưu nào trên Google Drive của bạn. Bạn có thể nhấn 'Đẩy lên Google Drive' để tạo bản sao lưu đầu tiên.");
-                        return;
+                    let encryptedPackage = null;
+
+                    if (GoogleDriveAPI.getGasUrl()) {
+                        encryptedPackage = await GoogleDriveAPI.fetchViaGAS();
+                    } else if (GoogleDriveAPI.accessToken) {
+                        const file = await GoogleDriveAPI.findBackupFile();
+                        if (!file) {
+                            this.showAuthMsg("Chưa tìm thấy file sao lưu trên Google Drive.");
+                            if (isManual) alert("Chưa có file sao lưu nào trên Google Drive của bạn. Bạn hãy làm bài và bấm 'Đẩy lên Drive' để tạo bản sao lưu.");
+                            return;
+                        }
+                        this.currentUser.driveFileId = file.id;
+                        encryptedPackage = await GoogleDriveAPI.downloadBackupContent(file.id);
                     }
 
-                    this.currentUser.driveFileId = file.id;
-                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(this.currentUser));
+                    if (!encryptedPackage) throw new Error("Không nhận được dữ liệu từ Google Drive.");
 
-                    const encryptedPackage = await GoogleDriveAPI.downloadBackupContent(file.id);
-
-                    // Giải mã với mật khẩu và tài khoản
                     const decryptedSnapshot = await CryptoVault.decryptPayload(
                         encryptedPackage,
                         this.currentUser.email,
@@ -1648,7 +1878,7 @@
                     this.showAuthMsg("Khôi phục thành công dữ liệu từ Google Drive!");
                     if (isManual) alert("Đã khôi phục hoàn tất đề thi, tiến trình và kết quả từ Google Drive!");
                 } catch (err) {
-                    console.error("Lỗi kéo dữ liệu Cloud:", err);
+                    console.error("Lỗi kéo dữ liệu:", err);
                     this.showAuthMsg(err.message, true);
                     if (isManual) alert("Không thể giải mã dữ liệu: " + err.message);
                 } finally {
@@ -1657,10 +1887,9 @@
                 }
             },
 
-            // Đánh dấu dữ liệu đã thay đổi và lên lịch đồng bộ thông minh
             markDirtyAndQueueSync(delayMs = 8000) {
                 this.isDirty = true;
-                if (!this.autoSyncEnabled || !this.currentUser || !GoogleDriveAPI.accessToken) {
+                if (!this.autoSyncEnabled || !this.currentUser || !GoogleDriveAPI.isConnected()) {
                     return;
                 }
 
@@ -1672,21 +1901,19 @@
                 }, delayMs);
             },
 
-            // Nhịp tim định kỳ kiểm tra & đồng bộ ngầm mỗi 45 giây
             startHeartbeat() {
                 if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
                 this.heartbeatInterval = setInterval(async () => {
-                    if (!this.autoSyncEnabled || !this.currentUser || !GoogleDriveAPI.accessToken) {
+                    if (!this.autoSyncEnabled || !this.currentUser || !GoogleDriveAPI.isConnected()) {
                         return;
                     }
                     if (this.isDirty) {
-                        console.log("AutoSync heartbeat: Đang đồng bộ thay đổi ngầm...");
+                        console.log("AutoSync: Đang đồng bộ thay đổi ngầm lên Google Drive...");
                         await this.pushToCloud(false);
                     }
                 }, 45000);
             },
 
-            // Xuất file JSON ngoại tuyến
             async exportOfflineJson() {
                 try {
                     const snapshot = this.getCurrentSnapshot();
@@ -1713,7 +1940,6 @@
                 }
             },
 
-            // Nạp file JSON ngoại tuyến
             async importOfflineJson(event) {
                 const file = event.target.files && event.target.files[0];
                 if (!file) return;
@@ -1723,7 +1949,6 @@
                     try {
                         const content = JSON.parse(e.target.result);
                         if (content.ciphertext) {
-                            // File bị mã hóa -> yêu cầu mật khẩu
                             const email = prompt("Nhập tài khoản / Email mã hóa của file:", (this.currentUser && this.currentUser.email) || "");
                             if (!email) return;
                             const pass = prompt("Nhập mật khẩu giải mã file:");

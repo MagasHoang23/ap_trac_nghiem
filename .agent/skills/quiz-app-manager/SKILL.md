@@ -197,3 +197,12 @@ Hệ thống tích hợp giải pháp đồng bộ dữ liệu đa thiết bị 
    - **Nút cỡ chữ**: `A-` (nhỏ 1.05rem), `A` (chuẩn 1.3rem), `A+` (lớn 1.55rem), `A++` (rất lớn 1.85rem).
    - **Nút căn lề**: Chuyển đổi giữa `Căn trái` và `Căn đều 2 bên` (`justify`).
    - **Toggle danh sách trên điện thoại**: Nút `📋 DS` cho phép thu gọn/mở rộng bảng danh sách câu hỏi để tập trung tối đa không gian cho nội dung trắc nghiệm.
+
+
+### 6.3. Giải pháp kết nối Google Drive không cần Google Cloud Console (Tránh lỗi 401 invalid_client):
+- **Nguyên nhân lỗi 401: invalid_client**: Xảy ra khi dùng Google OAuth 2.0 GIS nhưng chưa cấu hình Client ID hợp lệ đã được ủy quyền domain `https://magashoang23.github.io` trên Google Cloud Console.
+- **Giải pháp tối ưu (Google Apps Script Web App)**:
+  1. Người dùng chỉ cần vào `script.google.com`, bấm *New project*, dán mã Apps Script (có nút bấm sao chép 1-click trong app).
+  2. Bấm *Deploy > New deployment > Web app > Execute as: Me > Who has access: Anyone*.
+  3. Dán URL Web App vào ứng dụng -> Toàn bộ dữ liệu đề thi, tiến trình và lịch sử sẽ được mã hóa AES-256 rồi gửi thẳng vào Google Drive của người dùng.
+  4. Hoàn toàn miễn phí, không bao giờ hết hạn token, và không cần đăng ký tài khoản Google Cloud Developer.
