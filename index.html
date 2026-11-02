@@ -529,10 +529,16 @@
 
                     <div class="bg-white p-3 rounded-lg border border-blue-200 space-y-2">
                         <p class="font-semibold text-slate-700">3 Bước thực hiện nhanh (chỉ mất 1 phút):</p>
-                        <ol class="list-decimal list-inside space-y-1.5 text-slate-600">
-                            <li>Bấm <button type="button" id="btn-copy-gas-code" class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded border border-blue-300 hover:bg-blue-200">📋 Sao chép mã Apps Script</button></li>
-                            <li>Bấm <a href="https://script.google.com/home/start" target="_blank" class="px-2 py-0.5 bg-indigo-100 text-indigo-800 font-bold rounded border border-indigo-300 hover:bg-indigo-200 inline-flex items-center gap-1">🔗 Mở script.google.com ↗</a> &gt; Bấm <em>Dự án mới</em> &gt; Dán mã &gt; Bấm <em>Triển khai (Deploy)</em> &gt; <em>Tùy chọn triển khai mới</em> &gt; Chọn loại <em>Ứng dụng web (Web app)</em> &gt; Mục Ai có quyền truy cập: chọn <strong>Bất kỳ ai (Anyone)</strong> &gt; Bấm <em>Triển khai</em>.</li>
-                            <li>Sao chép <strong>URL Ứng dụng web</strong> (dạng <code>.../exec</code>) dán vào ô dưới đây:</li>
+                        <ol class="list-decimal list-inside space-y-2 text-slate-700">
+                            <li>Bấm <button type="button" id="btn-copy-gas-code" class="px-2.5 py-1 bg-blue-100 text-blue-800 font-bold rounded-lg border border-blue-300 hover:bg-blue-200 shadow-sm active:scale-95">📋 Sao chép mã Apps Script</button></li>
+                            <li>Bấm <a href="https://script.google.com/home/start" target="_blank" class="px-2.5 py-1 bg-indigo-100 text-indigo-800 font-bold rounded-lg border border-indigo-300 hover:bg-indigo-200 inline-flex items-center gap-1 shadow-sm">🔗 Mở script.google.com ↗</a> &gt; Bấm <em>Dự án mới</em> &gt; Dán mã &gt; Bấm <em>Triển khai (Deploy)</em> &gt; <em>Tùy chọn triển khai mới</em>.
+                                <div class="mt-1 p-2 bg-amber-50 border border-amber-300 rounded text-amber-900 text-[11px] leading-relaxed">
+                                    ⚠️ <strong>LƯU Ý QUAN TRỌNG (ĐỂ TRÁNH LỖI FAILED TO FETCH):</strong><br>
+                                    - Ở mục <strong>Ai có quyền truy cập (Who has access)</strong>: Bắt buộc chọn <strong>Bất kỳ ai (Anyone)</strong> (Mặc định Google để là <em>Chỉ mình tôi</em> khiến web bị chặn).<br>
+                                    - Nếu đã lỡ triển khai rồi: Vào <em>Triển khai &gt; Quản lý hoạt động triển khai &gt; Bấm biểu tượng cây bút ✏️ &gt; Đổi thành 'Bất kỳ ai' &gt; Chọn Phiên bản mới &gt; Bấm Triển khai</em>.
+                                </div>
+                            </li>
+                            <li>Trong bảng triển khai thành công, bấm vào nút <strong>[Sao chép]</strong> màu xanh dưới dòng <strong>URL</strong> (không dùng chuột bôi đen để tránh bị thiếu ký tự) rồi dán vào ô dưới:</li>
                         </ol>
 
                         <div class="pt-1">
@@ -1514,7 +1520,7 @@ function doGet(e) {
 
                 if (btnSaveGas && inputGas) {
                     btnSaveGas.addEventListener('click', async () => {
-                        const url = inputGas.value.trim();
+                        let url = inputGas.value.trim();
                         if (!url) {
                             GoogleDriveAPI.setGasUrl('');
                             this.updateAuthUI();
@@ -1523,8 +1529,26 @@ function doGet(e) {
                             return;
                         }
 
-                        if (!url.startsWith('https://script.google.com/macros/s/')) {
-                            alert("URL không đúng định dạng Google Apps Script Web App. Nó phải bắt đầu bằng https://script.google.com/macros/s/...");
+                        // Tự động sửa nếu người dùng chỉ dán ID triển khai
+                        if (!url.startsWith('http') && url.length > 25 && !url.includes('/')) {
+                            url = `https://script.google.com/macros/s/${url}/exec`;
+                            inputGas.value = url;
+                        }
+
+                        // Tự động bổ sung /exec nếu bị thiếu
+                        if (url.startsWith('https://script.google.com/macros/s/') && !url.endsWith('/exec')) {
+                            url = url.replace(/\/+$/, '') + '/exec';
+                            inputGas.value = url;
+                        }
+
+                        if (!url.startsWith('https://script.google.com/macros/s/') || !url.endsWith('/exec')) {
+                            alert("URL không đúng định dạng Google Apps Script Web App.\n\nURL chuẩn phải có dạng:\nhttps://script.google.com/macros/s/AKfycb.../exec");
+                            return;
+                        }
+
+                        // Kiểm tra độ dài URL (ID của Google luôn > 50 ký tự)
+                        if (url.length < 75) {
+                            alert("⚠️ Đường dẫn URL có vẻ bị cắt ngắn hoặc thiếu ký tự (chỉ có " + url.length + " ký tự)!\n\nHãy mở lại Google Apps Script, bấm vào nút [Sao chép] bên dưới dòng 'URL' để lấy đầy đủ toàn bộ đường dẫn thay vì dùng chuột bôi đen.");
                             return;
                         }
 
@@ -1536,7 +1560,7 @@ function doGet(e) {
                             if (gasStatus) gasStatus.textContent = "✅ Kết nối Google Drive thành công!";
                             this.updateAuthUI();
                             this.updateSyncBadge();
-                            alert("Kết nối Google Drive thành công! Bạn có thể bắt đầu đồng bộ dữ liệu.");
+                            alert("✅ Kết nối Google Drive thành công! Bạn có thể bắt đầu đồng bộ dữ liệu trên mọi thiết bị.");
                             if (this.currentUser) {
                                 this.fetchFromCloud(false);
                             }
@@ -1545,10 +1569,13 @@ function doGet(e) {
                                 if (gasStatus) gasStatus.textContent = "✅ Kết nối thành công (Chưa có file sao lưu)!";
                                 this.updateAuthUI();
                                 this.updateSyncBadge();
-                                alert("Kết nối Google Drive thành công! Chưa có bản sao lưu nào, ứng dụng sẽ tạo mới khi bạn làm bài.");
+                                alert("✅ Kết nối Google Drive thành công! Chưa có bản sao lưu nào, ứng dụng sẽ tự động tạo file sao lưu trên Drive khi bạn làm bài.");
+                            } else if (e.message === "Failed to fetch") {
+                                if (gasStatus) gasStatus.textContent = "❌ Lỗi: Failed to fetch (Bị chặn quyền)";
+                                alert("❌ Lỗi 'Failed to fetch' (Google Apps Script đang chặn kết nối)!\n\n👉 CÁCH KHẮC PHỤC TRONG 30 GIÂY:\n1. Trong tab Google Apps Script của bạn, bấm nút 'Triển khai' (Deploy) góc trên bên phải > Chọn 'Quản lý hoạt động triển khai' (Manage deployments).\n2. Bấm vào biểu tượng cây bút ✏️ (Chỉnh sửa) ở góc phải.\n3. Tại mục 'Ai có quyền truy cập' (Who has access): Đổi từ 'Chỉ mình tôi' thành 'Bất kỳ ai' (Anyone).\n4. Tại mục 'Phiên bản' (Version): Chọn 'Phiên bản mới' (New version) > Bấm 'Triển khai' (Deploy).\n5. Bấm vào nút [Sao chép] màu xanh dưới dòng URL rồi dán lại vào đây.");
                             } else {
                                 if (gasStatus) gasStatus.textContent = "❌ Lỗi: " + e.message;
-                                alert("Lỗi kết nối Web App: " + e.message + "\nVui lòng đảm bảo đã chọn 'Ai có quyền truy cập: Bất kỳ ai (Anyone)' khi triển khai trên Apps Script.");
+                                alert("Lỗi kết nối Web App: " + e.message + "\nVui lòng kiểm tra lại quyền 'Ai có quyền truy cập: Bất kỳ ai (Anyone)' trên Apps Script.");
                             }
                         }
                     });
