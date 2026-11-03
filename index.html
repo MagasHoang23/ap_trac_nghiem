@@ -942,12 +942,21 @@
                     continue;
                 }
 
-                // 6. Gạch đầu dòng có thụt lề phân cấp (- , * , + , •)
-                const bulletMatch = trimmed.match(/^[-*+•]\s+(.+)$/);
+                // 6. Gạch đầu dòng có thụt lề phân cấp (- , * , + , •, –, —)
+                const bulletMatch = trimmed.match(/^([-*+•–—])\s+(.+)$/);
                 if (bulletMatch) {
-                    const content = renderInlineRichText(escapeHtml(bulletMatch[1]));
-                    const bulletIcon = indentLevel === 0 ? '•' : (indentLevel === 1 ? '▪' : '▫');
-                    htmlLines.push(`<div class="flex items-start gap-2 my-0.5 text-xs md:text-sm text-slate-700 ${indentClass}"><span class="text-emerald-500 font-bold shrink-0 select-none leading-relaxed">${bulletIcon}</span><div class="flex-grow leading-relaxed">${content}</div></div>`);
+                    const rawSymbol = bulletMatch[1];
+                    const content = renderInlineRichText(escapeHtml(bulletMatch[2]));
+                    if (isQuestion) {
+                        // Trong đề bài: Nếu là dấu gạch ngang (lời thoại hội thoại) thì giữ dấu gạch ngang thanh lịch như đề thi thật
+                        const isDash = /[-–—]/.test(rawSymbol);
+                        const symbolDisplay = isDash ? '–' : '•';
+                        const symbolClass = isDash ? 'text-slate-700 font-bold text-base md:text-lg' : 'text-emerald-500 font-bold';
+                        htmlLines.push(`<div class="flex items-start gap-2.5 my-1.5 text-base md:text-lg font-medium text-slate-800 ${indentClass}"><span class="${symbolClass} shrink-0 select-none leading-relaxed">${symbolDisplay}</span><div class="flex-grow leading-relaxed">${content}</div></div>`);
+                    } else {
+                        const bulletIcon = indentLevel === 0 ? '•' : (indentLevel === 1 ? '▪' : '▫');
+                        htmlLines.push(`<div class="flex items-start gap-2 my-0.5 text-xs md:text-sm text-slate-700 ${indentClass}"><span class="text-emerald-500 font-bold shrink-0 select-none leading-relaxed">${bulletIcon}</span><div class="flex-grow leading-relaxed">${content}</div></div>`);
+                    }
                     continue;
                 }
 
@@ -956,14 +965,15 @@
                 if (numberMatch) {
                     const numLabel = numberMatch[1];
                     const content = renderInlineRichText(escapeHtml(numberMatch[2]));
-                    htmlLines.push(`<div class="flex items-start gap-2 my-0.5 text-xs md:text-sm text-slate-700 ${indentClass}"><span class="font-bold text-slate-700 shrink-0 select-none min-w-[18px] leading-relaxed">${numLabel}.</span><div class="flex-grow leading-relaxed">${content}</div></div>`);
+                    const sizeClass = isQuestion ? 'text-base md:text-lg font-medium text-slate-800' : 'text-xs md:text-sm text-slate-700';
+                    htmlLines.push(`<div class="flex items-start gap-2 my-0.5 ${sizeClass} ${indentClass}"><span class="font-bold text-slate-700 shrink-0 select-none min-w-[18px] leading-relaxed">${numLabel}.</span><div class="flex-grow leading-relaxed">${content}</div></div>`);
                     continue;
                 }
 
                 // 8. Dòng văn bản bình thường (giữ thụt lề nếu có)
-            const content = renderInlineRichText(escapeHtml(trimmed));
-            const baseTextClass = isQuestion ? 'font-medium text-slate-800' : 'text-slate-700';
-            htmlLines.push(`<div class="my-0.5 ${baseTextClass} leading-relaxed ${indentClass}">${content}</div>`);
+                const content = renderInlineRichText(escapeHtml(trimmed));
+                const baseTextClass = isQuestion ? 'font-medium text-slate-800 text-base md:text-lg' : 'text-slate-700';
+                htmlLines.push(`<div class="my-1 ${baseTextClass} leading-relaxed ${indentClass}">${content}</div>`);
             }
 
             return htmlLines.join('');
@@ -3044,6 +3054,17 @@ function doGet(e) {
         const parseErrorMessageEl = document.getElementById('parse-error-message');
 
 
+        // --- HÀM TỰ ĐỘNG CHUẨN HÓA VÀ TÁCH DÒNG CÂU HỎI HỘI THOẠI (DIALOGUE) ---
+        function formatQuestionDialogue(text) {
+            if (!text) return '';
+            let res = text;
+            // 1. Tự động tách khi có dấu gạch ngang phân cách câu thoại: VD: - "A" - "B" -> - "A"\n- "B"
+            res = res.replace(/([.!?"])\s+[-–—]\s+(["'A-Za-z])/g, '$1\n- $2');
+            // 2. Tự động tách khi có tên người nói phân cách: VD: "Hello!" Mary: "Hi!" -> "Hello!"\nMary: "Hi!"
+            res = res.replace(/([.!?"])\s+([A-Z][a-zA-Z0-9_\s]{1,15}:\s*["']?)/g, '$1\n$2');
+            return res;
+        }
+
         // --- HÀM PHÂN TÍCH VÀ BIÊN DỊCH DỮ LIỆU ĐỀ THI MỚI (NÂNG CẤP TOÀN DIỆN) ---
         function parseNewQuizData(textInput) {
             const newQuestions = [];
@@ -3065,6 +3086,8 @@ function doGet(e) {
             function finishCurrentQuestion() {
                 if (!currentQuestionObj) return;
                 if (currentQuestionObj.options.length > 0 && currentQuestionObj.question.trim()) {
+                    // Chuẩn hóa định dạng hội thoại nhiều dòng
+                    currentQuestionObj.question = formatQuestionDialogue(currentQuestionObj.question.trim());
                     if (!currentQuestionObj.correctAnswer) {
                         currentQuestionObj.correctAnswer = currentQuestionObj.options[0];
                     }
@@ -4290,6 +4313,12 @@ function doGet(e) {
    - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
    - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
+
+8. 💬 QUY TẮC CÂU HỎI HỘI THOẠI (DIALOGUE) & ĐỀ BÀI NHIỀU DÒNG:
+   - Khi câu hỏi là đoạn hội thoại đối đáp giữa 2 hoặc nhiều người:
+     + BẮT BUỘC mỗi lượt nói của một người phải nằm trên MỘT DÒNG RIÊNG BIỆT.
+     + BẮT BUỘC đầu mỗi dòng thoại phải có dấu gạch đầu dòng và khoảng trắng: - (Ví dụ: - "What a beautiful dress!" rồi xuống dòng - "Thank you!").
+     + TUYỆT ĐỐI KHÔNG gộp chung các lời thoại vào trên cùng một dòng.
 
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 \`\`\`text

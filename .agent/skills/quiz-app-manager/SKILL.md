@@ -140,6 +140,12 @@ Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghi�
    - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
    - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
 
+8. 💬 QUY TẮC CÂU HỎI HỘI THOẠI (DIALOGUE) & ĐỀ BÀI NHIỀU DÒNG:
+   - Khi câu hỏi là đoạn hội thoại đối đáp giữa 2 hoặc nhiều người:
+     + BẮT BUỘC mỗi lượt nói của một người phải nằm trên MỘT DÒNG RIÊNG BIỆT.
+     + BẮT BUỘC đầu mỗi dòng thoại phải có dấu gạch đầu dòng và khoảng trắng: - (Ví dụ: - "What a beautiful dress!" rồi xuống dòng - "Thank you!").
+     + TUYỆT ĐỐI KHÔNG gộp chung các lời thoại vào trên cùng một dòng.
+
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 ```text
 Câu 1: It is not easy to _____ our beauty when we get older and older.
