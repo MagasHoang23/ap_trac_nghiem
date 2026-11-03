@@ -2147,6 +2147,22 @@ function doGet(e) {
                         applyRemoteSubmission(payload);
                     }
                 }
+                // 10. ĐỒNG BỘ BẤM NÚT NỘP BÀI (MỞ MODAL CẢ 2 BÊN TỨC THÌ)
+                else if (payload.action === 'OPEN_SUBMIT_MODAL') {
+                    const devName = payload.deviceType || 'thiết bị khác';
+                    showLiveToast(`⚡ ${devName} vừa bấm nút Nộp bài!`);
+                    if (typeof showConfirmSubmitModal === 'function') {
+                        showConfirmSubmitModal(false, devName);
+                    }
+                }
+                // 11. ĐỒNG BỘ HỦY MODAL NỘP BÀI CẢ 2 BÊN
+                else if (payload.action === 'CANCEL_SUBMIT_MODAL') {
+                    const devName = payload.deviceType || 'thiết bị khác';
+                    showLiveToast(`⚡ ${devName} đã hủy nộp bài.`);
+                    if (typeof hideConfirmSubmitModal === 'function') {
+                        hideConfirmSubmitModal(false);
+                    }
+                }
             }
         };
 
@@ -3888,29 +3904,69 @@ function doGet(e) {
             clearInterval(timerInterval);
         }
 
-        // --- MODAL LOGIC (NỘP BÀI) ---
-        function showConfirmSubmitModal() {
-            if(confirmSubmitModalEl) confirmSubmitModalEl.classList.remove('hidden');
+        // --- MODAL LOGIC (NỘP BÀI ĐỒNG BỘ CẢ 2 MÁY) ---
+        const modalMessageEl = document.getElementById('modal-message');
+
+        function showConfirmSubmitModal(broadcast = false, fromDevice = null) {
+            if (isSubmitted || !currentQuizQuestions || currentQuizQuestions.length === 0) return;
+            if (modalMessageEl) {
+                if (fromDevice) {
+                    modalMessageEl.innerHTML = `<span class="text-blue-600 font-bold">⚡ ${escapeHtml(fromDevice)}</span> vừa bấm Nộp bài.<br><span class="text-sm text-gray-600">Bạn có chắc chắn muốn nộp bài cùng không?</span>`;
+                } else {
+                    modalMessageEl.textContent = "Bạn có chắc chắn muốn nộp bài không? (Cả 2 thiết bị sẽ cùng nộp)";
+                }
+            }
+            if (confirmSubmitModalEl) confirmSubmitModalEl.classList.remove('hidden');
+
+            if (broadcast && typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
+                RealtimeSync.touchActiveTime();
+                RealtimeSync.broadcast({
+                    action: 'OPEN_SUBMIT_MODAL',
+                    deviceType: RealtimeSync.getDeviceType(),
+                    timestamp: RealtimeSync.lastActiveTimestamp
+                });
+            }
         }
-        function hideConfirmSubmitModal() {
-            if(confirmSubmitModalEl) confirmSubmitModalEl.classList.add('hidden');
+
+        function hideConfirmSubmitModal(broadcast = false) {
+            if (confirmSubmitModalEl) confirmSubmitModalEl.classList.add('hidden');
+            if (modalMessageEl) {
+                modalMessageEl.textContent = "Bạn có chắc chắn muốn nộp bài không?";
+            }
+
+            if (broadcast && typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
+                RealtimeSync.touchActiveTime();
+                RealtimeSync.broadcast({
+                    action: 'CANCEL_SUBMIT_MODAL',
+                    deviceType: RealtimeSync.getDeviceType(),
+                    timestamp: RealtimeSync.lastActiveTimestamp
+                });
+            }
         }
         
-        if(modalConfirmBtn) {
+        if (modalConfirmBtn) {
             modalConfirmBtn.addEventListener('click', () => {
-                hideConfirmSubmitModal();
+                hideConfirmSubmitModal(false);
                 proceedWithSubmission(); 
             });
         }
-        if(modalCancelBtn) {
-            modalCancelBtn.addEventListener('click', () => hideConfirmSubmitModal());
+        if (modalCancelBtn) {
+            modalCancelBtn.addEventListener('click', () => hideConfirmSubmitModal(true));
+        }
+
+        if (confirmSubmitModalEl) {
+            confirmSubmitModalEl.addEventListener('click', (e) => {
+                if (e.target === confirmSubmitModalEl) {
+                    hideConfirmSubmitModal(true);
+                }
+            });
         }
         
-        // --- NỘP BÀI ---
-        if(submitQuizBtn) {
+        // --- NỘP BÀI (ĐỒNG BỘ NÚT BẤM SANG CẢ 2 THIẾT BỊ TỨC THÌ) ---
+        if (submitQuizBtn) {
             submitQuizBtn.addEventListener('click', () => {
-                if (isSubmitted || currentQuizQuestions.length === 0) return;
-                showConfirmSubmitModal(); 
+                if (isSubmitted || !currentQuizQuestions || currentQuizQuestions.length === 0) return;
+                showConfirmSubmitModal(true); 
             });
         }
 
