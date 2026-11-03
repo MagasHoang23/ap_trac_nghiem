@@ -3262,10 +3262,14 @@ function doGet(e) {
             // TUYỆT ĐỐI KHÔNG chứa từ "câu" ở đây để không bao giờ bắt nhầm "Câu gốc", "Câu bị động"!
             const fallbackLetterRegex = /^(?:\s*[-*+•\d\.]*\s*)?(?:xét\s+)?(?:đáp án|phương án|lựa chọn)?\s*[*_]*([A-Ha-h])[*_]*\s*[:\.\)-]\s+(.*)/i;
 
+            // KIỂM TRA XEM ĐỀ CÓ THẺ MARKER RÕ RÀNG KHÔNG ([OPT:A], [DA:A], [DAP_AN_A])
+            const hasExplicitMarkers = /\[(?:OPT|DA|DAP_AN)[:_]?[A-Ha-h]\]/i.test(rawGeneralExpl);
+
             // Regex câu kết luận (bắt bất kỳ dạng kết luận cũ nào để thay thế bằng câu kết luận chuẩn hóa ở cuối)
             const conclRegex = /^(?:->|=>|➜)?\s*(?:Do đó,?\s*)?(?:đáp án đúng\s+(?:là\s+)?|chọn\s+đáp án\s+|kết luận:?\s*(?:đáp án\s+)?)/i;
 
             let placeholderInserted = false;
+            let insideOptionSection = false;
 
             // Hàm xử lý thay thế các thẻ marker inline an toàn và chuẩn xác
             function replaceInlineMarkers(str) {
@@ -3312,6 +3316,17 @@ function doGet(e) {
                     continue;
                 }
 
+                // Nếu gặp dòng tiêu đề phân tích phương án (VD: "Phân tích các phương án:", "Phân tích các cặp phương án:", "Xét từng phương án:")
+                if (/(?:phân tích|xét|giải thích).*(?:phương án|lựa chọn|đáp án)/i.test(stripped)) {
+                    insideOptionSection = true;
+                    headerLines.push(replaceInlineMarkers(line));
+                    if (!placeholderInserted) {
+                        headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
+                        placeholderInserted = true;
+                    }
+                    continue;
+                }
+
                 // ƯU TIÊN 1: Thẻ Marker theo quy chuẩn mới: [OPT:A], [DA_A], [DAP_AN_A]
                 const markerMatch = stripped.match(markerOptRegex);
                 if (markerMatch) {
@@ -3335,75 +3350,76 @@ function doGet(e) {
                 }
 
                 // ƯU TIÊN 2: Dòng bắt đầu bằng chữ cái phương án truyền thống (VD: "- A: develop...")
-                const fbMatch = stripped.match(fallbackLetterRegex);
-                if (fbMatch) {
-                    const origL = fbMatch[1].toUpperCase();
-                    const newIdx = origToNewIdx[origL];
-                    if (newIdx !== undefined) {
-                        const badge = origToNewBadge[origL];
-                        const isThisCorrect = (newIdx === correctIdx);
+                // CHỈ chạy khi ĐÃ vào Option Section HOẶC không có explicit markers
+                if (insideOptionSection || !hasExplicitMarkers) {
+                    const fbMatch = stripped.match(fallbackLetterRegex);
+                    if (fbMatch) {
+                        const origL = fbMatch[1].toUpperCase();
+                        const newIdx = origToNewIdx[origL];
+                        if (newIdx !== undefined) {
+                            const badge = origToNewBadge[origL];
+                            const isThisCorrect = (newIdx === correctIdx);
+                            const icon = isThisCorrect ? "✅" : "❌";
+                            const body = replaceInlineMarkers(fbMatch[2] ? fbMatch[2].trim() : "");
+
+                            if (!placeholderInserted) {
+                                headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
+                                placeholderInserted = true;
+                            }
+
+                            if (!optBlocks[newIdx]) optBlocks[newIdx] = [];
+                            optBlocks[newIdx].push(`  - ${icon} **[${badge}]**: ${body}`);
+                            continue;
+                        }
+                    }
+                }
+
+                // ƯU TIÊN 3: Gạch đầu dòng phân tích nội dung phương án
+                // TUYỆT ĐỐI KHÔNG CHẠY KHI ĐÃ CÓ EXPLICIT MARKERS (Để không bao giờ cướp nhầm dòng lý thuyết)!
+                // VÀ CHỈ CHẠY KHI ĐÃ VÀO OPTION SECTION
+                if (!hasExplicitMarkers && insideOptionSection) {
+                    const isBullet = /^[-*+•\d\.]/.test(stripped);
+                    let matchedOptIdx = null;
+
+                    for (let j = 0; j < sortedOpts.length; j++) {
+                        const optObj = sortedOpts[j];
+                        if (optObj.clean.length >= 3 && stripped.toLowerCase().includes(optObj.clean.toLowerCase())) {
+                            matchedOptIdx = optObj.idx;
+                            break;
+                        }
+                    }
+
+                    const hasAnalysisKeyword = /loại|chuẩn xác|đúng|sai|bị đảo ngữ|thì|giới từ|cấu trúc|nguyên mẫu|phân từ|không phù hợp|không đi với/i.test(stripped) || stripped.includes(':');
+                    if (isBullet && matchedOptIdx !== null && hasAnalysisKeyword && !optBlocks[matchedOptIdx]) {
+                        const badge = currentBadgeStyle === 'numbers' ? String(matchedOptIdx + 1) : (optionLetters[matchedOptIdx] || String(matchedOptIdx + 1));
+                        const isThisCorrect = (matchedOptIdx === correctIdx);
                         const icon = isThisCorrect ? "✅" : "❌";
-                        const body = replaceInlineMarkers(fbMatch[2] ? fbMatch[2].trim() : "");
+
+                        let cleanBody = stripped.replace(/^[-*+•\d\.]*\s*/, '');
+                        const optStr = currOptions[matchedOptIdx];
+                        const cleanOptStr = optStr.trim().replace(/[.;,]+$/, '');
+                        
+                        const optRegex = new RegExp(escapeRegExp(cleanOptStr), 'i');
+                        if (optRegex.test(cleanBody)) {
+                            cleanBody = cleanBody.replace(optRegex, `**[${badge}] ${cleanOptStr}**`);
+                        } else {
+                            cleanBody = `**[${badge}]**: ${cleanBody}`;
+                        }
 
                         if (!placeholderInserted) {
                             headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
                             placeholderInserted = true;
                         }
 
-                        if (!optBlocks[newIdx]) optBlocks[newIdx] = [];
-                        optBlocks[newIdx].push(`  - ${icon} **[${badge}]**: ${body}`);
+                        if (!optBlocks[matchedOptIdx]) optBlocks[matchedOptIdx] = [];
+                        optBlocks[matchedOptIdx].push(`  - ${icon} ${replaceInlineMarkers(cleanBody)}`);
                         continue;
                     }
-                }
-
-                // ƯU TIÊN 3: Gạch đầu dòng phân tích nội dung phương án (VD: "* He was seen drink and drive: ...")
-                const isBullet = /^[-*+•\d\.]/.test(stripped);
-                let matchedOptIdx = null;
-
-                for (let j = 0; j < sortedOpts.length; j++) {
-                    const optObj = sortedOpts[j];
-                    if (optObj.clean.length >= 2 && stripped.toLowerCase().includes(optObj.clean.toLowerCase())) {
-                        matchedOptIdx = optObj.idx;
-                        break;
-                    }
-                }
-
-                const hasAnalysisKeyword = /loại|chuẩn xác|đúng|sai|bị đảo ngữ|thì|giới từ|cấu trúc|nguyên mẫu|phân từ|không phù hợp|không đi với/i.test(stripped) || stripped.includes(':');
-                if (isBullet && matchedOptIdx !== null && hasAnalysisKeyword && !optBlocks[matchedOptIdx]) {
-                    const badge = currentBadgeStyle === 'numbers' ? String(matchedOptIdx + 1) : (optionLetters[matchedOptIdx] || String(matchedOptIdx + 1));
-                    const isThisCorrect = (matchedOptIdx === correctIdx);
-                    const icon = isThisCorrect ? "✅" : "❌";
-
-                    let cleanBody = stripped.replace(/^[-*+•\d\.]*\s*/, '');
-                    const optStr = currOptions[matchedOptIdx];
-                    const cleanOptStr = optStr.trim().replace(/[.;,]+$/, '');
-                    
-                    const optRegex = new RegExp(escapeRegExp(cleanOptStr), 'i');
-                    if (optRegex.test(cleanBody)) {
-                        cleanBody = cleanBody.replace(optRegex, `**[${badge}] ${cleanOptStr}**`);
-                    } else {
-                        cleanBody = `**[${badge}]**: ${cleanBody}`;
-                    }
-
-                    if (!placeholderInserted) {
-                        headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
-                        placeholderInserted = true;
-                    }
-
-                    if (!optBlocks[matchedOptIdx]) optBlocks[matchedOptIdx] = [];
-                    optBlocks[matchedOptIdx].push(`  - ${icon} ${replaceInlineMarkers(cleanBody)}`);
-                    continue;
                 }
 
                 // Trường hợp 4: Dòng văn bản bình thường -> Thay thế các marker thông minh
                 let workingLine = replaceInlineMarkers(line);
                 headerLines.push(workingLine);
-
-                // Nếu gặp dòng tiêu đề phân tích phương án (VD: "Phân tích các phương án:", "Phân tích các cặp phương án:", "Xét từng phương án:")
-                if (/(?:phân tích|xét|giải thích).*(?:phương án|lựa chọn|đáp án)/i.test(stripped) && !placeholderInserted) {
-                    headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
-                    placeholderInserted = true;
-                }
             }
 
             // 4. Lắp ráp kết quả cuối cùng theo thứ tự nút thực tế (Slot 0 -> Slot 1 -> Slot 2 -> Slot 3...)
