@@ -1576,8 +1576,8 @@ function doGet(e) {
             deviceId: 'dev_' + Math.random().toString(36).substring(2, 9),
             lastActiveTimestamp: (function() {
                 try {
-                    return parseInt(localStorage.getItem('ap_quiz_last_active_time')) || Date.now();
-                } catch(e) { return Date.now(); }
+                    return parseInt(localStorage.getItem('ap_quiz_last_active_time')) || 0;
+                } catch(e) { return 0; }
             })(),
 
             touchActiveTime() {
@@ -1745,7 +1745,8 @@ function doGet(e) {
                     quizFingerprint: this.getQuizFingerprint(),
                     questionCount: (currentQuizQuestions && currentQuizQuestions.length) || 0,
                     answeredCount: Object.keys(userSelections || {}).length,
-                    lastActiveTimestamp: this.lastActiveTimestamp
+                    lastActiveTimestamp: this.lastActiveTimestamp,
+                    gasUrl: GoogleDriveAPI.getGasUrl()
                 });
             },
 
@@ -1755,29 +1756,32 @@ function doGet(e) {
                     return;
                 }
                 this.touchActiveTime();
-                const snapshot = CloudSyncManager.getCurrentSnapshot();
-                const gasUrl = GoogleDriveAPI.getGasUrl();
-                const deviceType = this.getDeviceType();
-
-                this.broadcast({
-                    action: 'SYNC_FULL_QUIZ_AND_PROGRESS',
-                    snapshot: snapshot,
-                    gasUrl: gasUrl,
-                    deviceType: deviceType,
-                    timestamp: this.lastActiveTimestamp
+                showLiveToast(`📤 Đang đồng bộ đề thi (${currentQuizQuestions.length} câu) lên kho chung...`);
+                CloudSyncManager.pushToCloud(false).then(() => {
+                    this.broadcast({
+                        action: 'CLOUD_DATA_UPDATED',
+                        deviceType: this.getDeviceType(),
+                        timestamp: this.lastActiveTimestamp,
+                        questionCount: currentQuizQuestions.length,
+                        answeredCount: Object.keys(userSelections || {}).length,
+                        gasUrl: GoogleDriveAPI.getGasUrl()
+                    });
+                    showLiveToast(`📤 Đã cập nhật đề thi lên Google Drive và báo cho thiết bị khác!`);
+                    if (alertOnDone) alert(`✅ Đã đồng bộ thành công bộ đề thi (${currentQuizQuestions.length} câu) lên kho chung!`);
+                }).catch(err => {
+                    console.warn("Lỗi push full state:", err);
                 });
-                showLiveToast(`📤 Đã gửi trọn bộ đề thi (${currentQuizQuestions.length} câu) sang thiết bị khác!`);
-                if (alertOnDone) alert(`✅ Đã đẩy thành công bộ đề thi (${currentQuizQuestions.length} câu) sang thiết bị khác!`);
             },
 
             requestFullStateFromPeers() {
                 const deviceType = this.getDeviceType();
+                showLiveToast(`📡 Đang kiểm tra và kéo đề mới từ Google Drive...`);
+                CloudSyncManager.autoSyncCheck();
                 this.broadcast({
                     action: 'REQUEST_PEER_SYNC',
                     deviceType: deviceType,
                     timestamp: Date.now()
                 });
-                showLiveToast(`📡 Đang đối chiếu và kéo đề mới từ thiết bị khác...`);
             },
 
             updatePeerModalUI() {
@@ -1807,18 +1811,31 @@ function doGet(e) {
 
                 const count = (currentQuizQuestions && currentQuizQuestions.length) || 0;
                 if (quizInfo) {
-                    quizInfo.textContent = `Đề hiện tại trên ${this.getDeviceType()}: ${count} câu (sửa lúc: ${new Date(this.lastActiveTimestamp).toLocaleTimeString()})`;
+                    const timeStr = this.lastActiveTimestamp > 0 ? new Date(this.lastActiveTimestamp).toLocaleTimeString() : 'Chưa có';
+                    quizInfo.textContent = `Đề hiện tại trên ${this.getDeviceType()}: ${count} câu (sửa lúc: ${timeStr})`;
                 }
                 if (pushBtnLabel) {
-                    pushBtnLabel.textContent = `Đẩy đề này (${count} câu) sang máy kia ngay`;
+                    pushBtnLabel.textContent = `Đẩy đề này (${count} câu) lên kho chung ngay`;
                 }
             },
 
             handleRemoteAction(payload) {
                 if (!payload || !payload.action) return;
 
-                // 1. TỰ ĐỘNG ĐỐI CHIẾU DỮ LIỆU BÊN NÀO MỚI HƠN THÌ ĐỒNG BỘ VỀ PHÍA ĐÓ
+                // 1. TỰ ĐỘNG ĐỐI CHIẾU DỮ LIỆU & CHIA SẺ CẤU HÌNH GOOGLE DRIVE
                 if (payload.action === 'SYNC_HANDSHAKE') {
+                    // Tự động đồng bộ đường dẫn Google Apps Script nếu máy này chưa có
+                    if (payload.gasUrl && typeof GoogleDriveAPI !== 'undefined' && !GoogleDriveAPI.getGasUrl()) {
+                        GoogleDriveAPI.setGasUrl(payload.gasUrl);
+                        const inputGas = document.getElementById('input-gas-url');
+                        if (inputGas) inputGas.value = payload.gasUrl;
+                        CloudSyncManager.updateAuthUI();
+                        CloudSyncManager.updateSyncBadge();
+                        CloudSyncManager.autoSyncCheck();
+                    } else if (!payload.gasUrl && GoogleDriveAPI.getGasUrl()) {
+                        this.broadcastHandshake();
+                    }
+
                     const myFingerprint = this.getQuizFingerprint();
                     const remoteFingerprint = payload.quizFingerprint;
                     const myCount = (currentQuizQuestions && currentQuizQuestions.length) || 0;
@@ -1830,23 +1847,43 @@ function doGet(e) {
 
                     // TH1: 2 máy đang chạy 2 bộ đề hoàn toàn khác nhau
                     if (myFingerprint !== remoteFingerprint) {
-                        if (remoteTime > myTime && remoteCount > 0) {
-                            showLiveToast(`⚡ Phát hiện đề mới hơn (${remoteCount} câu) từ ${payload.deviceType}! Đang tự động kéo về...`);
-                            this.requestFullStateFromPeers();
-                        } else if (myTime >= remoteTime && myCount > 0) {
-                            this.pushFullStateToPeers(false);
+                        if (remoteAnswers > myAnswers || (remoteTime > myTime && remoteCount > 0)) {
+                            showLiveToast(`⚡ Phát hiện đề mới hơn (${remoteCount} câu) từ ${payload.deviceType}! Đang tự động kéo từ Drive...`);
+                            CloudSyncManager.autoSyncCheck();
+                        } else if (myAnswers > remoteAnswers || (myTime >= remoteTime && myCount > 0)) {
+                            CloudSyncManager.pushToCloud(false);
                         }
                     }
                     // TH2: Cùng bộ đề nhưng máy kia có tiến trình mới hơn
                     else if (myFingerprint === remoteFingerprint && myCount > 0) {
-                        if (remoteTime > myTime && remoteAnswers > myAnswers) {
-                            this.requestFullStateFromPeers();
-                        } else if (myTime > remoteTime && myAnswers > remoteAnswers) {
-                            this.pushFullStateToPeers(false);
+                        if (remoteAnswers > myAnswers || remoteTime > myTime) {
+                            CloudSyncManager.autoSyncCheck();
+                        } else if (myAnswers > remoteAnswers) {
+                            CloudSyncManager.pushToCloud(false);
                         }
                     }
                 }
-                // 2. NHẬN TOÀN BỘ ĐỀ THI VÀ TIẾN TRÌNH TỪ MÁY KHÁC
+                // 2. THÔNG BÁO DỮ LIỆU TRÊN GOOGLE DRIVE VỪA CẬP NHẬT MỚI
+                else if (payload.action === 'CLOUD_DATA_UPDATED') {
+                    if (payload.gasUrl && typeof GoogleDriveAPI !== 'undefined' && !GoogleDriveAPI.getGasUrl()) {
+                        GoogleDriveAPI.setGasUrl(payload.gasUrl);
+                        const inputGas = document.getElementById('input-gas-url');
+                        if (inputGas) inputGas.value = payload.gasUrl;
+                        CloudSyncManager.updateAuthUI();
+                        CloudSyncManager.updateSyncBadge();
+                    }
+                    const devName = payload.deviceType || 'thiết bị khác';
+                    showLiveToast(`⚡ ${devName} vừa cập nhật dữ liệu lên Google Drive! Đang kéo về...`);
+                    CloudSyncManager.autoSyncCheck();
+                }
+                // 3. THIẾT BỊ KHÁC YÊU CẦU ĐỒNG BỘ
+                else if (payload.action === 'REQUEST_PEER_SYNC') {
+                    if (currentQuizQuestions && currentQuizQuestions.length > 0) {
+                        CloudSyncManager.pushToCloud(false);
+                        showLiveToast(`📤 Đã cập nhật đề thi lên Drive cho ${escapeHtml(payload.deviceType || 'thiết bị khác')}!`);
+                    }
+                }
+                // 4. NHẬN TOÀN BỘ ĐỀ THI TỪ MÁY KHÁC (FALLBACK)
                 else if (payload.action === 'SYNC_FULL_QUIZ_AND_PROGRESS') {
                     const { snapshot, gasUrl, deviceType, timestamp } = payload;
                     if (snapshot && Array.isArray(snapshot.currentQuizQuestions) && snapshot.currentQuizQuestions.length > 0) {
@@ -1857,7 +1894,7 @@ function doGet(e) {
 
                         if (gasUrl && typeof GoogleDriveAPI !== 'undefined' && !GoogleDriveAPI.getGasUrl()) {
                             GoogleDriveAPI.setGasUrl(gasUrl);
-                            const inputGas = document.getElementById('input-gas-web-app-url');
+                            const inputGas = document.getElementById('input-gas-url');
                             if (inputGas) inputGas.value = gasUrl;
                         }
 
@@ -1871,14 +1908,7 @@ function doGet(e) {
                         showLiveToast(`⚡ Đã tự động đồng bộ sang bộ đề (${snapshot.currentQuizQuestions.length} câu) từ ${devName}! Cả 2 máy hiện đã khớp 100%!`);
                     }
                 }
-                // 3. THIẾT BỊ KHÁC YÊU CẦU KÉO ĐỀ VỀ
-                else if (payload.action === 'REQUEST_PEER_SYNC') {
-                    if (currentQuizQuestions && currentQuizQuestions.length > 0) {
-                        this.pushFullStateToPeers(false);
-                        showLiveToast(`📤 Đã chia sẻ đề thi sang ${escapeHtml(payload.deviceType || 'thiết bị khác')}!`);
-                    }
-                }
-                // 4. THAO TÁC CHỌN ĐÁP ÁN (DƯỚI 100MS) - PHẢN XẠ SONG SONG MÀN HÌNH TỨC THÌ
+                // 5. THAO TÁC CHỌN ĐÁP ÁN (DƯỚI 100MS) - PHẢN XẠ SONG SONG MÀN HÌNH TỨC THÌ
                 else if (payload.action === 'SELECT_ANSWER') {
                     const { questionId, optionText, questionIndex, timestamp } = payload;
                     if (timestamp) {
@@ -1886,6 +1916,13 @@ function doGet(e) {
                         try { localStorage.setItem('ap_quiz_last_active_time', this.lastActiveTimestamp.toString()); } catch(e) {}
                     }
                     if (questionId && optionText !== undefined) {
+                        const hasQuestion = currentQuizQuestions && currentQuizQuestions.some(q => q.id === questionId);
+                        if (!hasQuestion) {
+                            // Không tìm thấy câu hỏi trong đề hiện tại -> kéo đề mới từ Drive
+                            CloudSyncManager.autoSyncCheck();
+                            return;
+                        }
+
                         const isFirstTime = !userSelections[questionId];
                         userSelections[questionId] = optionText;
 
@@ -1922,12 +1959,12 @@ function doGet(e) {
                         saveCurrentState(false);
                     }
                 }
-                // 5. CHUYỂN CÂU HỎI THEO MÁY KIA (FOLLOW NAVIGATION)
+                // 6. CHUYỂN CÂU HỎI THEO MÁY KIA (FOLLOW NAVIGATION)
                 else if (payload.action === 'NAVIGATE_QUESTION') {
                     if (typeof payload.questionIndex === 'number' && payload.questionIndex !== currentQuestionIndex) {
                         const toggleFollow = document.getElementById('modal-toggle-follow');
                         const isFollowEnabled = toggleFollow ? toggleFollow.checked : true;
-                        if (isFollowEnabled && typeof displayQuestion === 'function') {
+                        if (isFollowEnabled && typeof displayQuestion === 'function' && currentQuizQuestions && currentQuizQuestions.length > payload.questionIndex) {
                             this._isRemoteNavigating = true;
                             displayQuestion(payload.questionIndex, false);
                             this._isRemoteNavigating = false;
@@ -1935,12 +1972,17 @@ function doGet(e) {
                         }
                     }
                 }
-                // 6. CẮM CỜ / BỎ CỜ
+                // 7. CẮM CỜ / BỎ CỜ
                 else if (payload.action === 'TOGGLE_FLAG') {
                     const { questionId, questionIndex, isFlagged, timestamp } = payload;
                     if (timestamp) {
                         this.lastActiveTimestamp = Math.max(this.lastActiveTimestamp, timestamp);
                         try { localStorage.setItem('ap_quiz_last_active_time', this.lastActiveTimestamp.toString()); } catch(e) {}
+                    }
+                    const hasQuestion = currentQuizQuestions && currentQuizQuestions.some(q => q.id === questionId);
+                    if (!hasQuestion) {
+                        CloudSyncManager.autoSyncCheck();
+                        return;
                     }
                     if (isFlagged) {
                         flaggedQuestions.add(questionId);
@@ -1959,7 +2001,7 @@ function doGet(e) {
                     showLiveToast(`⚡ Thiết bị khác vừa ${isFlagged ? 'cắm cờ' : 'bỏ cắm cờ'} Câu ${qNum}!`, targetIdx);
                     saveCurrentState(false);
                 }
-                // 7. LÀM LẠI ĐỀ
+                // 8. LÀM LẠI ĐỀ
                 else if (payload.action === 'RETRY_QUIZ') {
                     showLiveToast("⚡ Thiết bị khác vừa bấm làm lại đề!");
                     attemptNumber = payload.attemptNumber || (attemptNumber + 1);
@@ -1967,14 +2009,14 @@ function doGet(e) {
                         initializeQuiz();
                     }
                 }
-                // 8. NỘP BÀI
+                // 9. NỘP BÀI
                 else if (payload.action === 'SUBMIT_QUIZ') {
-                    showLiveToast("⚡ Thiết bị khác vừa nộp bài! Đang cập nhật kết quả...");
+                    showLiveToast("⚡ Thiết bị khác vừa nộp bài! Đang cập nhật kết quả từ Drive...");
                     setTimeout(() => {
-                        if (CloudSyncManager.isConnected()) {
-                            CloudSyncManager.fetchFromCloud(false);
+                        if (CloudSyncManager.currentUser && GoogleDriveAPI.isConnected()) {
+                            CloudSyncManager.autoSyncCheck();
                         }
-                    }, 1200);
+                    }, 800);
                 }
             }
         };
@@ -1997,12 +2039,35 @@ function doGet(e) {
                         if (typeof RealtimeSync !== 'undefined') {
                             RealtimeSync.connect(this.currentUser.email, this.currentUser.password);
                         }
+                        // TỰ ĐỘNG ĐỐI CHIẾU VÀ ĐỒNG BỘ TỪ KHO GOOGLE DRIVE KHI KHỞI ĐỘNG
+                        if (GoogleDriveAPI.isConnected()) {
+                            setTimeout(() => {
+                                this.autoSyncCheck();
+                            }, 600);
+                        }
                     }
                 } catch (e) {}
 
                 this.setupEventListeners();
                 this.startHeartbeat();
                 this.updateSyncBadge();
+
+                // TỰ ĐỘNG ĐỒNG BỘ KHI QUAY LẠI TRÌNH DUYỆT (TAB FOCUS / MỞ LẠI APP TRÊN ĐIỆN THOẠI)
+                let _lastFocusCheck = 0;
+                const triggerFocusCheck = () => {
+                    const now = Date.now();
+                    if (now - _lastFocusCheck > 3000) {
+                        _lastFocusCheck = now;
+                        if (this.currentUser && GoogleDriveAPI.isConnected()) {
+                            this.autoSyncCheck();
+                        }
+                    }
+                };
+
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) triggerFocusCheck();
+                });
+                window.addEventListener('focus', triggerFocusCheck);
             },
 
             setupEventListeners() {
@@ -2378,7 +2443,8 @@ function doGet(e) {
                     score: score || 0,
                     isSubmitted: !!isSubmitted,
                     attemptNumber: attemptNumber || 1,
-                    attemptHistory: attemptHistory || []
+                    attemptHistory: attemptHistory || [],
+                    lastUpdated: Date.now()
                 };
             },
 
@@ -2416,10 +2482,15 @@ function doGet(e) {
 
                 try {
                     initializeQuiz(true);
+                    if (snapshot.isSubmitted && typeof proceedWithSubmission === 'function') {
+                        proceedWithSubmission();
+                    }
                 } catch (e) {
                     console.error("Lỗi khôi phục snapshot:", e);
                 }
                 this.isDirty = false;
+                const updateTime = snapshot.lastUpdated || Date.now();
+                localStorage.setItem('quiz_local_last_updated', updateTime.toString());
             },
 
             async pushToCloud(isManual = false) {
@@ -2436,6 +2507,11 @@ function doGet(e) {
                     return;
                 }
                 if (this.isSyncing) return;
+
+                // BẢO VỆ DỮ LIỆU: Không bao giờ tự động đẩy bộ đề rỗng lên kho chung Google Drive
+                if (!isManual && (!currentQuizQuestions || currentQuizQuestions.length === 0)) {
+                    return;
+                }
 
                 this.isSyncing = true;
                 this.updateSyncBadge();
@@ -2476,9 +2552,23 @@ function doGet(e) {
                         }
                     }
 
-                    this.lastSyncedTimestamp = Date.now();
+                    const now = Date.now();
+                    this.lastSyncedTimestamp = now;
+                    localStorage.setItem('quiz_local_last_updated', now.toString());
                     this.isDirty = false;
                     this.showAuthMsg("Đã đồng bộ lên Google Drive lúc " + new Date().toLocaleTimeString());
+
+                    // PHÁT TÍN HIỆU NHẸ (<200 BYTES) ĐỂ THIẾT BỊ KHÁC KÉO TỨC THÌ
+                    if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
+                        RealtimeSync.broadcast({
+                            action: 'CLOUD_DATA_UPDATED',
+                            timestamp: now,
+                            totalQuestions: (currentQuizQuestions && currentQuizQuestions.length) || 0,
+                            answeredCount: Object.keys(userSelections || {}).length,
+                            gasUrl: GoogleDriveAPI.getGasUrl()
+                        });
+                    }
+
                     if (isManual) alert("Đã đẩy và đồng bộ dữ liệu lên Google Drive thành công!");
                 } catch (err) {
                     console.error("Lỗi đẩy lên Cloud:", err);
@@ -2542,8 +2632,16 @@ function doGet(e) {
                     );
 
                     this.restoreFromSnapshot(decryptedSnapshot);
-                    this.lastSyncedTimestamp = encryptedPackage.lastModified || Date.now();
+                    const cloudTime = encryptedPackage.lastModified || Date.now();
+                    this.lastSyncedTimestamp = cloudTime;
+                    localStorage.setItem('quiz_local_last_updated', cloudTime.toString());
+                    if (typeof RealtimeSync !== 'undefined') {
+                        RealtimeSync.lastActiveTimestamp = cloudTime;
+                        try { localStorage.setItem('ap_quiz_last_active_time', cloudTime.toString()); } catch(e) {}
+                        RealtimeSync.updatePeerModalUI();
+                    }
                     this.showAuthMsg("Khôi phục thành công dữ liệu từ Google Drive!");
+                    showLiveToast(`⚡ Đã đồng bộ thành công dữ liệu mới nhất từ Google Drive!`);
                     if (isManual) alert("Đã khôi phục hoàn tất đề thi, tiến trình và kết quả từ Google Drive!");
                 } catch (err) {
                     console.error("Lỗi kéo dữ liệu:", err);
@@ -2552,6 +2650,64 @@ function doGet(e) {
                 } finally {
                     this.isSyncing = false;
                     this.updateSyncBadge();
+                }
+            },
+
+            async autoSyncCheck(silent = true) {
+                if (!this.currentUser || !GoogleDriveAPI.isConnected() || this.isSyncing) return;
+                try {
+                    let encryptedPackage = null;
+                    if (GoogleDriveAPI.getGasUrl()) {
+                        encryptedPackage = await GoogleDriveAPI.fetchViaGAS();
+                    } else if (GoogleDriveAPI.accessToken) {
+                        const file = await GoogleDriveAPI.findBackupFile();
+                        if (file) {
+                            this.currentUser.driveFileId = file.id;
+                            encryptedPackage = await GoogleDriveAPI.downloadBackupContent(file.id);
+                        }
+                    }
+                    if (!encryptedPackage || !encryptedPackage.ciphertext) return;
+
+                    const cloudTime = encryptedPackage.lastModified || 0;
+                    const localTime = parseInt(localStorage.getItem('quiz_local_last_updated')) || 0;
+                    const myCount = (currentQuizQuestions && currentQuizQuestions.length) || 0;
+                    const myAnswered = Object.keys(userSelections || {}).length;
+                    const cloudAnswered = (encryptedPackage.summary && encryptedPackage.summary.answeredCount) || 0;
+                    const cloudTotal = (encryptedPackage.summary && encryptedPackage.summary.totalQuestions) || 0;
+
+                    // TIÊU CHÍ ĐỐI CHIẾU THÔNG MINH GIỮA 2 MÁY:
+                    // 1. Cloud có thời gian sửa đổi mới hơn cục bộ ít nhất 1.5 giây
+                    const isCloudNewer = (cloudTime > localTime + 1500);
+                    // 2. Máy này đang trống / chưa làm câu nào hoặc số câu ít hơn đề trên Drive
+                    const isLocalStaleOrEmpty = (myCount === 0 || (myAnswered === 0 && cloudTotal > 0));
+                    // 3. Cùng bộ đề nhưng trên Drive đã làm nhiều câu hơn
+                    const isCloudMoreProgress = (cloudTotal === myCount && cloudAnswered > myAnswered);
+
+                    if (isCloudNewer || isLocalStaleOrEmpty || isCloudMoreProgress) {
+                        console.log("AutoSyncCheck: Phát hiện bản sao lưu mới hơn trên Google Drive. Tiến hành khôi phục...");
+                        const decryptedSnapshot = await CryptoVault.decryptPayload(
+                            encryptedPackage,
+                            this.currentUser.email,
+                            this.currentUser.password
+                        );
+                        this.restoreFromSnapshot(decryptedSnapshot);
+                        localStorage.setItem('quiz_local_last_updated', cloudTime.toString());
+                        this.lastSyncedTimestamp = cloudTime;
+                        if (typeof RealtimeSync !== 'undefined') {
+                            RealtimeSync.lastActiveTimestamp = cloudTime;
+                            try { localStorage.setItem('ap_quiz_last_active_time', cloudTime.toString()); } catch(e) {}
+                            RealtimeSync.updatePeerModalUI();
+                        }
+                        this.updateSyncBadge();
+                        showLiveToast(`⚡ Đã tự động đồng bộ đề thi & tiến trình mới nhất từ Google Drive!`);
+                    } else if (localTime > cloudTime + 3000 && (myAnswered > cloudAnswered || myCount !== cloudTotal)) {
+                        // Máy này có tiến trình nhiều hơn bản trên Drive
+                        console.log("AutoSyncCheck: Dữ liệu trên máy này mới hơn Google Drive. Đang đẩy lên Cloud...");
+                        await this.pushToCloud(false);
+                    }
+                } catch (err) {
+                    if (err.message && err.message.includes('File not found')) return;
+                    console.warn("AutoSyncCheck error:", err);
                 }
             },
 
@@ -2578,8 +2734,10 @@ function doGet(e) {
                     if (this.isDirty) {
                         console.log("AutoSync: Đang đồng bộ thay đổi ngầm lên Google Drive...");
                         await this.pushToCloud(false);
+                    } else {
+                        await this.autoSyncCheck();
                     }
-                }, 45000);
+                }, 30000);
             },
 
             async exportOfflineJson() {
@@ -2882,10 +3040,7 @@ function doGet(e) {
                         }
                     });
                 }
-                if (typeof saveCurrentState === 'function') saveCurrentState();
-            if (typeof CloudSyncManager !== 'undefined') {
-                CloudSyncManager.markDirtyAndQueueSync(1500);
-            }
+                if (typeof saveCurrentState === 'function') saveCurrentState(false);
             }
 
             if (currentQuizQuestions.length === 0) {
@@ -3474,13 +3629,17 @@ function doGet(e) {
                 updateNavigationGridCellStatus(currentQuestionIndex);
 
                 // Bắn realtime cắm cờ
-                if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
-                    RealtimeSync.broadcast({
-                        action: 'TOGGLE_FLAG',
-                        questionId: currentQuestionId,
-                        questionIndex: currentQuestionIndex,
-                        isFlagged: isNowFlagged
-                    });
+                if (typeof RealtimeSync !== 'undefined') {
+                    RealtimeSync.touchActiveTime();
+                    if (RealtimeSync.isConnected) {
+                        RealtimeSync.broadcast({
+                            action: 'TOGGLE_FLAG',
+                            questionId: currentQuestionId,
+                            questionIndex: currentQuestionIndex,
+                            isFlagged: isNowFlagged,
+                            timestamp: RealtimeSync.lastActiveTimestamp
+                        });
+                    }
                 }
 
                 if (typeof saveCurrentState === 'function') saveCurrentState();
@@ -3684,11 +3843,18 @@ function doGet(e) {
             retryQuizBtn.addEventListener('click', () => {
                 attemptNumber++; 
                 initializeQuiz(); 
-                if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
-                    RealtimeSync.broadcast({
-                        action: 'RETRY_QUIZ',
-                        attemptNumber: attemptNumber
-                    });
+                if (typeof RealtimeSync !== 'undefined') {
+                    RealtimeSync.touchActiveTime();
+                    if (RealtimeSync.isConnected) {
+                        RealtimeSync.broadcast({
+                            action: 'RETRY_QUIZ',
+                            attemptNumber: attemptNumber,
+                            timestamp: RealtimeSync.lastActiveTimestamp
+                        });
+                    }
+                }
+                if (typeof CloudSyncManager !== 'undefined') {
+                    CloudSyncManager.pushToCloud(false);
                 }
             });
         }
@@ -4077,16 +4243,19 @@ Giải thích:
 
         function saveCurrentState(syncToCloud = true) {
             if (isSubmitted) return;
+            const now = Date.now();
             const state = {
                 quizDataForCurrentSession,
                 currentQuizQuestions,
                 currentQuestionIndex,
                 userSelections,
                 flaggedQuestions: Array.from(flaggedQuestions),
-                secondsElapsed
+                secondsElapsed,
+                lastUpdated: now
             };
             try {
                 localStorage.setItem(CURRENT_STATE_STORAGE_KEY, JSON.stringify(state));
+                localStorage.setItem('quiz_local_last_updated', now.toString());
             } catch (e) { console.error("Lỗi lưu trạng thái:", e); }
 
             // Chỉ kích hoạt đồng bộ Cloud khi có tương tác thực sự từ người dùng
@@ -4291,8 +4460,11 @@ Giải thích:
         }
 
         if (btnModalPullQuiz) {
-            btnModalPullQuiz.addEventListener('click', () => {
-                if (typeof RealtimeSync !== 'undefined') {
+            btnModalPullQuiz.addEventListener('click', async () => {
+                if (typeof CloudSyncManager !== 'undefined') {
+                    await CloudSyncManager.fetchFromCloud(true);
+                    if (peerSyncModal) peerSyncModal.classList.add('hidden');
+                } else if (typeof RealtimeSync !== 'undefined') {
                     RealtimeSync.requestFullStateFromPeers();
                     if (peerSyncModal) peerSyncModal.classList.add('hidden');
                 }
