@@ -3064,6 +3064,11 @@ function doGet(e) {
                         const icon = isThisCorrect ? "✅" : "❌";
                         const body = replaceInlineMarkers(markerMatch[2] ? markerMatch[2].trim() : "");
 
+                        if (!placeholderInserted) {
+                            headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
+                            placeholderInserted = true;
+                        }
+
                         if (!optBlocks[newIdx]) optBlocks[newIdx] = [];
                         optBlocks[newIdx].push(`  - ${icon} **[${badge}]**: ${body}`);
                         continue;
@@ -3080,6 +3085,11 @@ function doGet(e) {
                         const isThisCorrect = (newIdx === correctIdx);
                         const icon = isThisCorrect ? "✅" : "❌";
                         const body = replaceInlineMarkers(fbMatch[2] ? fbMatch[2].trim() : "");
+
+                        if (!placeholderInserted) {
+                            headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
+                            placeholderInserted = true;
+                        }
 
                         if (!optBlocks[newIdx]) optBlocks[newIdx] = [];
                         optBlocks[newIdx].push(`  - ${icon} **[${badge}]**: ${body}`);
@@ -3115,6 +3125,11 @@ function doGet(e) {
                         cleanBody = `**[${badge}]**: ${cleanBody}`;
                     }
 
+                    if (!placeholderInserted) {
+                        headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
+                        placeholderInserted = true;
+                    }
+
                     if (!optBlocks[matchedOptIdx]) optBlocks[matchedOptIdx] = [];
                     optBlocks[matchedOptIdx].push(`  - ${icon} ${replaceInlineMarkers(cleanBody)}`);
                     continue;
@@ -3124,8 +3139,8 @@ function doGet(e) {
                 let workingLine = replaceInlineMarkers(line);
                 headerLines.push(workingLine);
 
-                // Nếu gặp dòng tiêu đề phân tích phương án (VD: "Phân tích các phương án:")
-                if (/phân tích các phương án|xét các phương án/i.test(stripped) && !placeholderInserted) {
+                // Nếu gặp dòng tiêu đề phân tích phương án (VD: "Phân tích các phương án:", "Phân tích các cặp phương án:", "Xét từng phương án:")
+                if (/(?:phân tích|xét|giải thích).*(?:phương án|lựa chọn|đáp án)/i.test(stripped) && !placeholderInserted) {
                     headerLines.push("__REORDERED_OPTIONS_BLOCKS__");
                     placeholderInserted = true;
                 }
