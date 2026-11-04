@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="app-build-version" content="1730718000000">
+    <meta name="app-build-version" content="1730722000000">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -989,11 +989,37 @@
             if (!escapedText) return '';
             let s = escapedText;
 
-            // 0. Tự động loại bỏ các thẻ trích dẫn tài liệu do AI sinh ra (như [cite: 1], [citation: 1], [source: 1])
+            // 0. Tự động loại bỏ các thẻ trích dẫn tài liệu do AI sinh ra (như [cite: 1], [citation: 1], [source: 1], 【...】)
             s = s.replace(/\[cite:\s*[^\]]+\]/gi, '');
             s = s.replace(/\[citation:\s*[^\]]+\]/gi, '');
             s = s.replace(/\[source:\s*[^\]]+\]/gi, '');
             s = s.replace(/\[ref:\s*[^\]]+\]/gi, '');
+            s = s.replace(/【[^】]+】/g, '');
+
+            // 0.1. Tự động chuyển đổi các ký hiệu LaTeX mũi tên & toán học sang vector SVG cao cấp hoặc ký tự chuẩn
+            // Mũi tên suy luận sang phải: $\rightarrow$, $\Rightarrow$, \rightarrow, \Rightarrow, $\to$, \to, $\longrightarrow$, $\Longrightarrow$
+            s = s.replace(/(?:\$\s*\\(?:rightarrow|Rightarrow|longrightarrow|Longrightarrow|to)\s*\$|\\(?:rightarrow|Rightarrow|longrightarrow|Longrightarrow|to)\b)/g,
+                '<span class="inline-flex items-center justify-center w-3.5 h-3.5 text-blue-600 align-middle mx-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></span>');
+
+            // Mũi tên sang trái: $\leftarrow$, $\Leftarrow$, \leftarrow, \Leftarrow, $\longleftarrow$, $\Longleftarrow$
+            s = s.replace(/(?:\$\s*\\(?:leftarrow|Leftarrow|longleftarrow|Longleftarrow)\s*\$|\\(?:leftarrow|Leftarrow|longleftarrow|Longleftarrow)\b)/g,
+                '<span class="inline-flex items-center justify-center w-3.5 h-3.5 text-blue-600 align-middle mx-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></span>');
+
+            // Mũi tên 2 chiều: $\leftrightarrow$, $\Leftrightarrow$, \leftrightarrow, \Leftrightarrow, $\longleftrightarrow$, $\Longleftrightarrow$
+            s = s.replace(/(?:\$\s*\\(?:leftrightarrow|Leftrightarrow|longleftrightarrow|Longleftrightarrow)\s*\$|\\(?:leftrightarrow|Leftrightarrow|longleftrightarrow|Longleftrightarrow)\b)/g,
+                '<span class="inline-flex items-center justify-center w-4 h-3.5 text-blue-600 align-middle mx-1 font-bold">↔</span>');
+
+            // Ký hiệu toán học LaTeX
+            s = s.replace(/\$\s*\\approx\s*\$|\\approx\b/g, '≈');
+            s = s.replace(/\$\s*\\neq\s*\$|\\neq\b/g, '≠');
+            s = s.replace(/\$\s*\\leq\s*\$|\\leq\b/g, '≤');
+            s = s.replace(/\$\s*\\geq\s*\$|\\geq\b/g, '≥');
+            s = s.replace(/\$\s*\\times\s*\$|\\times\b/g, '×');
+            s = s.replace(/\$\s*\\div\s*\$|\\div\b/g, '÷');
+
+            // Mũi tên nội tuyến (sau escapeHtml, \'>\' chuyển thành \'&gt;\'): \'-&gt;\', \'=gt;\', \'->\', \'=>\', \'➜\'
+            s = s.replace(/(?:-&gt;|=&gt;|->|=>|➜)/g,
+                '<span class="inline-flex items-center justify-center w-3.5 h-3.5 text-blue-600 align-middle mx-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></span>');
 
             // 1. Bảo vệ chỗ trống điền từ (fill-in-the-blank) như: __, ___, ____, _____
             // Tuyệt đối không để dấu gạch dưới bị hiểu nhầm thành in đậm hoặc in nghiêng
@@ -1137,8 +1163,8 @@
                     continue;
                 }
 
-                // 5. Mũi tên suy luận (-> hoặc => hoặc ➜)
-                const arrowMatch = trimmed.match(/^(?:->|=>|➜)\s*(.+)$/);
+                // 5. Mũi tên suy luận (-> hoặc => hoặc ➜ hoặc mã LaTeX $\rightarrow$, \rightarrow)
+                const arrowMatch = trimmed.match(/^(?:->|=>|➜|\$\s*\\(?:rightarrow|Rightarrow|longrightarrow|Longrightarrow|to)\s*\$|\\(?:rightarrow|Rightarrow|longrightarrow|Longrightarrow|to)\b)\s*(.+)$/);
                 if (arrowMatch) {
                     const content = renderInlineRichText(escapeHtml(arrowMatch[1]));
                     htmlLines.push(`<div class="flex items-start gap-1.5 my-1 text-blue-700 font-medium text-xs md:text-sm ${indentClass}"><span class="inline-flex items-center justify-center w-4 h-4 text-blue-600 shrink-0 select-none align-middle mt-0.5"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></span><div class="flex-grow">${content}</div></div>`);
@@ -1887,7 +1913,7 @@ function doGet(e) {
         // HỆ THỐNG PHÁT HIỆN & BẢO VỆ PHIÊN BẢN WEB (VersionGuard)
         // Cấm thiết bị chạy bản cũ đồng bộ / ghi đè; Tự động xóa cache & tải lại
         // =========================================================================
-        const APP_BUILD_VERSION = 1730718000000;
+        const APP_BUILD_VERSION = 1730722000000;
 
         const VersionGuard = {
             currentBuild: APP_BUILD_VERSION,
@@ -3634,12 +3660,13 @@ function doGet(e) {
         // --- HÀM PHÂN TÍCH VÀ BIÊN DỊCH DỮ LIỆU ĐỀ THI MỚI (NÂNG CẤP TOÀN DIỆN) ---
         function parseNewQuizData(textInput) {
             const newQuestions = [];
-            // Dọn dẹp rác trích dẫn do AI sinh ra (như [cite: 1], [citation: 1], [source: 1])
+            // Dọn dẹp rác trích dẫn do AI sinh ra (như [cite: 1], [citation: 1], [source: 1], 【...】)
             const sanitizedInput = textInput
                 .replace(/\[cite:\s*[^\]]+\]/gi, '')
                 .replace(/\[citation:\s*[^\]]+\]/gi, '')
                 .replace(/\[source:\s*[^\]]+\]/gi, '')
-                .replace(/\[ref:\s*[^\]]+\]/gi, '');
+                .replace(/\[ref:\s*[^\]]+\]/gi, '')
+                .replace(/【[^】]+】/g, '');
             const lines = sanitizedInput.replace(/\r\n/g, '\n').split('\n');
             let currentQuestionObj = null;
             let questionCounter = 0;
@@ -4863,7 +4890,9 @@ function doGet(e) {
 ⚡ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
 1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick \`\`\`text ... \`\`\`) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
 
-2. CẤM TRÍCH DẪN RÁC: TUYỆT ĐỐI KHÔNG chèn các thẻ trích dẫn tài liệu như [cite: 1], [citation: 1], [source: 1], [1] vào trong đề bài hay phần giải thích.
+2. 🚫 CẤM TRÍCH DẪN RÁC & CẤM MÃ LATEX TOÁN HỌC:
+   - TUYỆT ĐỐI KHÔNG chèn các thẻ trích dẫn tài liệu tìm kiếm web như [cite: 1], [citation: 1], [source: 1], [1], 【source】 vào trong đề bài hay phần giải thích.
+   - TUYỆT ĐỐI KHÔNG DÙNG CÚ PHÁP LATEX TOÁN HỌC như $\rightarrow$, $\Rightarrow$, \rightarrow, \Rightarrow, $\leftrightarrow$, \to. Khi viết mũi tên suy luận, CHỈ ĐƯỢC DÙNG ký hiệu thông thường: -> hoặc => hoặc dùng từ ngữ tiếng Việt tự nhiên như "suy ra", "chuyển thành".
 
 3. QUY TẮC CHỖ TRỐNG ĐIỀN TỪ: Với các câu hỏi điền từ vào chỗ trống, hãy dùng 4 hoặc 5 dấu gạch dưới (Ví dụ: "Men make _____ house and women make _____ home").
 
