@@ -1885,17 +1885,29 @@ function doGet(e) {
                     return;
                 }
                 this.touchActiveTime();
-                showLiveToast(`📤 Đang kiểm tra và đẩy đề (${currentQuizQuestions.length} câu) lên Google Drive...`);
+                const snapshot = (typeof CloudSyncManager !== 'undefined') ? CloudSyncManager.getCurrentSnapshot() : null;
+
+                // 1. PHÁT TỨC THÌ TOÀN BỘ BỘ ĐỀ SANG MÁY KIA (< 100MS) KHÔNG CẦN CHỜ DRIVE
+                if (snapshot) {
+                    this.broadcast({
+                        action: 'SYNC_FULL_QUIZ_AND_PROGRESS',
+                        snapshot: snapshot,
+                        deviceType: this.getDeviceType(),
+                        timestamp: this.lastActiveTimestamp,
+                        gasUrl: GoogleDriveAPI.getGasUrl()
+                    });
+                }
+
+                showLiveToast(`📤 Đang lưu bộ đề (${currentQuizQuestions.length} câu) lên Google Drive...`);
                 
-                // KIỂM TRA CHẶT CHẼ: Chỉ khi Google Drive thực sự lưu thành công mới thông báo thành công!
+                // 2. LƯU LÊN GOOGLE DRIVE
                 const success = await CloudSyncManager.pushToCloud(false);
                 if (!success) {
-                    showLiveToast(`❌ Chưa thể đẩy lên Google Drive! Vui lòng kiểm tra lại kết nối.`);
-                    if (alertOnDone) alert("❌ Không thể đồng bộ lên Google Drive!\n\nVui lòng kiểm tra lại kết nối mạng hoặc quyền truy cập Google Apps Script.");
+                    showLiveToast(`⚠️ Đã phát trực tiếp sang máy kia (Drive đang bận hoặc ngoại tuyến).`);
                     return;
                 }
 
-                // Phát tín hiệu thông báo sang máy kia
+                // 3. THÔNG BÁO DRIVE ĐÃ LƯU BẢN MỚI NHẤT
                 const sent = await this.broadcast({
                     action: 'CLOUD_DATA_UPDATED',
                     deviceType: this.getDeviceType(),
@@ -1907,11 +1919,8 @@ function doGet(e) {
                 });
 
                 if (sent) {
-                    showLiveToast(`✅ Đã lưu lên Drive & báo sang thiết bị khác thành công!`);
+                    showLiveToast(`✅ Đã lưu lên Drive & đồng bộ 2 máy thành công!`);
                     if (alertOnDone) alert(`✅ Đã đồng bộ thành công bộ đề (${currentQuizQuestions.length} câu) sang thiết bị khác!`);
-                } else {
-                    showLiveToast(`⚠️ Đã lưu lên Drive (Máy kia sẽ tự cập nhật khi mở app).`);
-                    if (alertOnDone) alert(`✅ Dữ liệu đã lưu an toàn lên Google Drive. Thiết bị kia sẽ tự cập nhật khi mở lại tab.`);
                 }
             },
 
@@ -1987,20 +1996,27 @@ function doGet(e) {
                     const myAnswers = Object.keys(userSelections || {}).length;
                     const remoteAnswers = payload.answeredCount || 0;
 
-                    // TH1: 2 máy đang chạy 2 bộ đề khác nhau
+                    // TH1: 2 máy đang chạy 2 bộ đề khác nhau (Tuyệt đối không so sánh myAnswers === 0)
                     if (myFingerprint !== remoteFingerprint) {
-                        if (remoteTime >= myTime - 2000 || myAnswers === 0) {
-                            showLiveToast(`⚡ Phát hiện đề mới hơn (${remoteCount} câu) từ ${payload.deviceType}! Đang tự động kéo từ Drive...`);
+                        if (myCount === 0 && remoteCount > 0) {
+                            showLiveToast(`⚡ Nhận bộ đề (${remoteCount} câu) từ ${payload.deviceType}...`);
+                            CloudSyncManager.autoSyncCheck();
+                        } else if (remoteCount === 0 && myCount > 0) {
+                            showLiveToast(`📤 Đẩy bộ đề (${myCount} câu) sang ${payload.deviceType}...`);
+                            this.pushFullStateToPeers(false);
+                        } else if (remoteTime > myTime + 2000) {
+                            showLiveToast(`⚡ Phát hiện đề mới hơn (${remoteCount} câu) từ ${payload.deviceType}! Đang tự động cập nhật...`);
                             CloudSyncManager.autoSyncCheck();
                         } else if (myTime > remoteTime + 2000 && myCount > 0) {
+                            showLiveToast(`📤 Đề trên máy này mới hơn. Đang đồng bộ (${myCount} câu) sang ${payload.deviceType}...`);
                             this.pushFullStateToPeers(false);
                         }
                     }
-                    // TH2: Cùng bộ đề nhưng máy kia có tiến trình mới hơn
+                    // TH2: Cùng bộ đề
                     else if (myFingerprint === remoteFingerprint && myCount > 0) {
-                        if (remoteAnswers > myAnswers || remoteTime > myTime + 1500) {
+                        if (remoteTime > myTime + 2000 || remoteAnswers > myAnswers) {
                             CloudSyncManager.autoSyncCheck();
-                        } else if (myAnswers > remoteAnswers) {
+                        } else if (myTime > remoteTime + 2000 || myAnswers > remoteAnswers) {
                             CloudSyncManager.pushToCloud(false);
                         }
                     }
@@ -2859,32 +2875,45 @@ function doGet(e) {
                     const myFingerprint = RealtimeSync.getQuizFingerprint();
 
                     // KIỂM TRA CHẶT CHẼ DỮ LIỆU & THỜI GIAN GIỮA 2 MÁY:
-                    // 1. Khác bộ đề (tổng số câu khác nhau HOẶC nội dung câu hỏi khác nhau)
                     const isDifferentQuiz = (cloudTotal > 0 && cloudTotal !== myCount) || 
                                            (cloudFingerprint && myFingerprint && myFingerprint !== 'empty_0' && cloudFingerprint !== myFingerprint);
-                    // 2. Cloud có thời gian sửa đổi mới hơn cục bộ ít nhất 2 giây
-                    const isCloudNewer = (cloudTime > localTime + 2000);
-                    // 3. Cùng bộ đề nhưng trên Drive đã làm nhiều câu hơn
-                    const isCloudMoreProgress = (!isDifferentQuiz && cloudAnswered > myAnswered);
-                    // 4. Máy này đang trống hoàn toàn (chưa làm câu nào) mà trên Drive đã có bài
-                    const isLocalStaleOrEmpty = (myAnswered === 0 && cloudAnswered > 0);
 
                     let shouldPull = false;
                     let shouldPush = false;
 
-                    if (isDifferentQuiz) {
-                        // 2 máy khác bộ đề -> Căn cứ vào thời gian cập nhật của bộ đề
-                        if (cloudTime >= localTime - 2000 || myAnswered === 0) {
+                    // 1. MÁY NÀY HOÀN TOÀN TRỐNG (Chưa nạp câu hỏi nào) MÀ TRÊN CLOUD ĐÃ CÓ ĐỀ
+                    if (myCount === 0 && cloudTotal > 0) {
+                        shouldPull = true;
+                    }
+                    // 2. TRÊN CLOUD CHƯA CÓ ĐỀ MÀ MÁY NÀY ĐÃ CÓ ĐỀ
+                    else if (cloudTotal === 0 && myCount > 0) {
+                        shouldPush = true;
+                    }
+                    // 3. KHÁC BỘ ĐỀ (Một bên vừa nạp đề mới vào)
+                    else if (isDifferentQuiz) {
+                        // So sánh thời gian cập nhật của bộ đề: BẢN NÀO MỚI HƠN THÌ LẤY BẢN ĐÓ!
+                        // Tuyệt đối không so sánh myAnswered === 0 vì đề mới nạp luôn có 0 câu trả lời!
+                        if (cloudTime > localTime + 2000) {
+                            shouldPull = true;
+                        } else if (localTime > cloudTime + 2000) {
+                            shouldPush = true;
+                        }
+                    }
+                    // 4. CÙNG BỘ ĐỀ
+                    else {
+                        // So sánh thời gian nếu chênh lệch đáng kể (> 3s)
+                        if (cloudTime > localTime + 3000) {
                             shouldPull = true;
                         } else if (localTime > cloudTime + 3000) {
                             shouldPush = true;
                         }
-                    } else {
-                        // Cùng bộ đề
-                        if (isCloudNewer || isCloudMoreProgress || isLocalStaleOrEmpty) {
+                        // Nếu thời gian gần nhau: bên nào làm nhiều câu hơn thì bên đó tiến bộ hơn
+                        else if (cloudAnswered > myAnswered) {
                             shouldPull = true;
-                        } else if (localTime > cloudTime + 3000 && myAnswered > cloudAnswered) {
+                        } else if (myAnswered > cloudAnswered) {
                             shouldPush = true;
+                        } else if (cloudAttempts > myAttempts) {
+                            shouldPull = true;
                         }
                     }
 
@@ -4539,8 +4568,12 @@ Giải thích:
                         if (loadQuizModalEl) loadQuizModalEl.classList.add('hidden');
                         if (parseErrorMessageEl) parseErrorMessageEl.classList.add('hidden');
                         console.log("New quiz loaded and initialized successfully!");
+                        // ĐÁNH DẤU MỐC THỜI GIAN MỚI NHẤT CHO BỘ ĐỀ VỪA NẠP
+                        const nowLoad = Date.now();
+                        localStorage.setItem('quiz_local_last_updated', nowLoad.toString());
                         if (typeof RealtimeSync !== 'undefined') {
-                            RealtimeSync.touchActiveTime();
+                            RealtimeSync.lastActiveTimestamp = nowLoad;
+                            try { localStorage.setItem('ap_quiz_last_active_time', nowLoad.toString()); } catch(e) {}
                             if (RealtimeSync.isConnected) {
                                 RealtimeSync.pushFullStateToPeers(false);
                             }
