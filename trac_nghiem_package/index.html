@@ -15,19 +15,40 @@
             font-size: 0.75rem; /* 12px */
             margin-left: 4px;
         }
-        /* Nút đáp án */
+        /* Nút đáp án / Thẻ lựa chọn */
         .option-btn {
             cursor: pointer;
             background-color: #ffffff;
             transition: all 0.2s ease;
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
-        .option-btn:hover:not(:disabled) {
+        .option-btn:hover:not(:disabled):not(.answered) {
             background-color: #f8fafc;
             border-color: #94a3b8;
             transform: translateY(-1px);
             box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         }
-        .option-btn:disabled {
+        .option-btn:disabled, .option-btn.answered {
+            cursor: default;
+        }
+        /* Cho phép bôi đen, quét chuột sao chép mượt mà trên toàn bộ nội dung lựa chọn và giải thích */
+        .option-btn .option-content,
+        .option-btn .option-content *,
+        .option-btn .explanation-box,
+        .option-btn .explanation-box *,
+        .option-btn .explanation-box-wrong,
+        .option-btn .explanation-box-wrong *,
+        .option-btn .rich-text-wrapper,
+        .option-btn .rich-text-wrapper * {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            cursor: text;
+        }
+        /* Riêng huy hiệu chữ cái A, B, C, D giữ cố định không bị bôi chọn nhầm */
+        .option-letter-badge {
+            user-select: none !important;
+            -webkit-user-select: none !important;
             cursor: default;
         }
         .option-btn.selected {
@@ -3650,8 +3671,13 @@ function doGet(e) {
 
             if (question.options && Array.isArray(question.options)) {
                 question.options.forEach((optionText, optIdx) => {
-                    const optionButton = document.createElement('button');
-                    optionButton.classList.add('option-btn', 'w-full', 'text-left', 'p-3', 'md:p-4', 'border', 'border-gray-200', 'rounded-xl', 'hover:bg-slate-50', 'transition-all', 'focus:outline-none', 'mb-3', 'shadow-sm', 'relative');
+                    const optionButton = document.createElement('div');
+                    optionButton.setAttribute('role', 'button');
+                    optionButton.setAttribute('tabindex', hasAnswered ? '-1' : '0');
+                    optionButton.classList.add('option-btn', 'w-full', 'text-left', 'p-3', 'md:p-4', 'border', 'border-gray-200', 'rounded-xl', 'transition-all', 'focus:outline-none', 'mb-3', 'shadow-sm', 'relative');
+                    if (!hasAnswered) {
+                        optionButton.classList.add('hover:bg-slate-50');
+                    }
                     
                     const optionHeaderDiv = document.createElement('div');
                     optionHeaderDiv.classList.add('flex', 'items-start', 'gap-2.5');
@@ -3669,14 +3695,25 @@ function doGet(e) {
                     optionHeaderDiv.appendChild(contentSpan);
                     optionButton.appendChild(optionHeaderDiv);
 
-                    optionButton.onclick = () => {
+                    optionButton.onclick = (e) => {
+                        // Không kích hoạt chọn nếu người dùng đang bôi đen / quét chuột để sao chép văn bản
+                        const sel = window.getSelection();
+                        if (sel && sel.toString().trim().length > 0) return;
+
                         if (!hasAnswered && !isSubmitted) {
+                            selectAnswer(question.id, optionText, optionButton);
+                        }
+                    };
+                    optionButton.onkeydown = (e) => {
+                        if ((e.key === 'Enter' || e.key === ' ') && !hasAnswered && !isSubmitted) {
+                            e.preventDefault();
                             selectAnswer(question.id, optionText, optionButton);
                         }
                     };
 
                     if (hasAnswered) {
-                        optionButton.disabled = true; 
+                        optionButton.classList.add('answered');
+                        optionButton.setAttribute('aria-disabled', 'true');
                         optionButton.classList.remove('hover:bg-slate-50'); 
 
                         // Kiểm tra trạng thái
@@ -4093,7 +4130,7 @@ function doGet(e) {
             if (resultsSummaryEl) resultsSummaryEl.classList.remove('hidden');
             if (submitQuizBtn) submitQuizBtn.classList.add('hidden');
             if (retryQuizBtn) retryQuizBtn.classList.remove('hidden');
-            if (optionsContainerEl) optionsContainerEl.classList.add('pointer-events-none');
+            if (optionsContainerEl) optionsContainerEl.classList.remove('pointer-events-none');
             if (flagQuestionBtn) flagQuestionBtn.disabled = true;
         }
 
@@ -4296,7 +4333,7 @@ function doGet(e) {
         const copyPromptToast = document.getElementById('copy-prompt-toast');
 
         // PROMPT MẪU CHUẨN GỬI CHO AI (ChatGPT, Claude, Gemini, DeepSeek...)
-        const aiPromptTemplate = `Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
+        const aiPromptTemplate = `Bạn là một chuyên gia sư phạm và soạn thảo đề thi trắc nghiệm tiếng Anh/học thuật hàng đầu. Hãy giúp tôi tạo [SỐ LƯỢNG CÂU HỎI, VÍ DỤ: 5 CÂU] trắc nghiệm về chủ đề: [NHẬP CHỦ ĐỀ CỦA BẠN VÀO ĐÂY].
 
 ⚡ YÊU CẦU ĐỊNH DẠNG ĐẶC BIỆT BẮT BUỘC (HỆ THỐNG APP SẼ PARSE TỰ ĐỘNG):
 1. TOÀN BỘ KẾT QUẢ XUẤT RA PHẢI ĐƯỢC ĐẶT TRONG DUY NHẤT 1 KHỐI CODE BLOCK (dùng 3 dấu backtick \`\`\`text ... \`\`\`) ĐỂ GIỮ NGUYÊN KHOẢNG TRẮNG, DẤU CÁCH THỤT LỀ, CÁC KÝ TỰ ĐẶC BIỆT. Tuyệt đối không viết thêm lời chào hay giải thích nào bên ngoài khối code block này.
@@ -4341,41 +4378,47 @@ function doGet(e) {
    - Các phương án: A., B., C., D. (ĐÁP ÁN ĐÚNG PHẢI CÓ DẤU SAO * ĐẶT NGAY PHÍA SAU, ví dụ: B. maintain*).
    - Phần giải thích: Bắt đầu bằng dòng "Giải thích:".
 
-7. Trình bày phần GIẢI THÍCH (Phải rõ ràng, gọn gàng, có tính sư phạm cao):
-   - Tiêu đề mục: Dùng # Tiêu đề lớn, ## Tiêu đề vừa, ### Tiêu đề nhỏ.
-   - Từ khóa cốt lõi: Dùng **in đậm**, <u>gạch chân</u>.
-   - Thụt lề phân cấp ý: Dùng 2 khoảng trắng (cấp 1) hoặc 4 khoảng trắng (cấp 2) ở đầu dòng.
-   - Gạch đầu dòng: Dùng - hoặc * (tự động phân cấp khi có khoảng trắng thụt lề).
-   - Ghi chú / Trích dẫn nổi bật: Dùng > ở đầu dòng (Ví dụ: > Ghi nhớ: ...).
-   - Nổi bật: Dùng ==đánh dấu highlight== hoặc [do]chữ đỏ[/do], [xanh]chữ xanh[/xanh].
+7. 🌟 TIÊU CHUẨN GIẢI THÍCH CHI TIẾT, RÕ RÀNG & BẮT BUỘC CÓ BẢN DỊCH:
+   Phần giải thích phải đạt tính sư phạm cao nhất, gồm 5 phần mạch lạc:
+   - Mục 1: **Cấu trúc / Quy tắc ngữ pháp / Cụm từ cố định (Collocation / Phrasal Verb)**: Nêu rõ công thức và bản chất ngữ pháp.
+   - Mục 2: **Dịch nghĩa câu hoàn chỉnh**: BẮT BUỘC có dòng dịch trọn vẹn cả câu đề bài (khi đã điền đáp án đúng vào) sang tiếng Việt tự nhiên, chuẩn nghĩa, dễ hiểu nhất:
+     - Dịch nghĩa câu hoàn chỉnh: *"..."*
+   - Mục 3: **Phân tích ngữ cảnh & Loại trừ**: Giải thích vì sao cần chọn phương án này, dùng các thẻ [DA_A], [DA_B], [DA_C], [DA_D].
+   - Mục 4: **Phân tích chi tiết 4 phương án ([OPT:A] đến [OPT:D])**:
+     + Mỗi phương án phải nêu rõ: **Từ loại** (n/v/adj/adv), **Nghĩa tiếng Việt**, và **Lý do vì sao đúng/sai** (sai thì, sai từ loại, sai giới từ, hay sai ngữ cảnh).
+   - Mục 5: **Khối Ghi nhớ / Mẹo làm bài & Kết luận**:
+     + Dùng khối \`> ==Ghi nhớ:== [do]cụm từ / công thức[/do] = nghĩa\` để nhấn mạnh kiến thức trọng tâm.
+     + Kết luận bằng: \`-> Do đó, đáp án đúng là: [DAP_AN_DUNG] **[Nội dung đáp án đúng]**.\`
 
 8. 💬 QUY TẮC CÂU HỎI HỘI THOẠI (DIALOGUE) & ĐỀ BÀI NHIỀU DÒNG:
    - Khi câu hỏi là đoạn hội thoại đối đáp giữa 2 hoặc nhiều người:
      + BẮT BUỘC mỗi lượt nói của một người phải nằm trên MỘT DÒNG RIÊNG BIỆT.
      + BẮT BUỘC đầu mỗi dòng thoại phải có dấu gạch đầu dòng và khoảng trắng: - (Ví dụ: - "What a beautiful dress!" rồi xuống dòng - "Thank you!").
      + TUYỆT ĐỐI KHÔNG gộp chung các lời thoại vào trên cùng một dòng.
+     + Trong phần giải thích, cũng dịch nghĩa từng lượt thoại tương ứng để học sinh hiểu sâu.
 
 MẪU VÍ DỤ CHUẨN CẦN XUẤT RA:
 \`\`\`text
-Câu 1: It is not easy to _____ our beauty when we get older and older.
-A. develop
-B. maintain*
-C. gain
-D. collect
+Câu 1: When communicating, nonverbal messages can _____ with verbal messages in some ways.
+A. interact*
+B. go
+C. mix
+D. act
 
 Giải thích:
-# Cấu trúc câu với tính từ & Ngữ nghĩa:
-- Cấu trúc: S + be + not easy + to V-inf (thật không dễ để làm gì).
-- Câu gốc diễn tả việc giữ gìn, bảo tồn vẻ đẹp nhan sắc theo thời gian.
-- Do đó loại [DA_A] và [DA_D] vì không mang nghĩa phù hợp với nhan sắc.
+# Cụm từ cố định (Collocation) & Ngữ nghĩa:
+- Cấu trúc/Cụm từ: **interact with something** = tương tác, tác động qua lại với cái gì.
+- Dịch nghĩa câu hoàn chỉnh: *"Khi giao tiếp, các thông điệp phi ngôn ngữ có thể tương tác với các thông điệp ngôn ngữ theo một số cách."*
+- Phân tích ngữ cảnh: Chủ ngữ là 'nonverbal messages' (thông điệp phi ngôn ngữ) và tân ngữ sau giới từ 'with' là 'verbal messages' (thông điệp ngôn ngữ). Cần một động từ diễn tả mối quan hệ tác động qua lại lẫn nhau. Do đó chọn [DA_A], loại [DA_B], [DA_C], [DA_D].
 
 Phân tích các phương án:
-- [OPT:A]: develop (phát triển) không mang nghĩa bảo tồn hay giữ gìn nhan sắc.
-- [OPT:B]: maintain (duy trì, giữ gìn) hoàn toàn chính xác với cụm 'maintain our beauty'.
-- [OPT:C]: gain (đạt được, tăng lên) thường đi với weight, experience, kiến thức.
-- [OPT:D]: collect (thu thập, sưu tầm) dùng cho đồ vật, không dùng cho nhan sắc.
+- [OPT:A]: **interact** (v: tương tác) kết hợp chuẩn xác với giới từ 'with' tạo thành cụm 'interact with' mang nghĩa tương tác qua lại.
+- [OPT:B]: **go** (v: đi) khi ghép 'go with' mang nghĩa là đi kèm hoặc phối hợp ăn ý (thường dùng cho đồ ăn, màu sắc, quần áo).
+- [OPT:C]: **mix** (v: trộn) khi ghép 'mix with' mang nghĩa trộn lẫn, hòa trộn cơ học về mặt vật lý/chất lỏng.
+- [OPT:D]: **act** (v: hành động) khi ghép 'act with' mang nghĩa hành động với một thái độ cụ thể (như act with care), không mang nghĩa tương tác qua lại.
 
--> Do đó, đáp án đúng là: [DAP_AN_DUNG] **maintain**.
+> ==Ghi nhớ:== [do]interact with sb/sth[/do] = tương tác, tác động qua lại với ai/cái gì.
+-> Do đó, đáp án đúng là: [DAP_AN_DUNG] **interact**.
 \`\`\`
 
 Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra bên trong 1 khối code block \`\`\`text ... \`\`\` duy nhất:`;
@@ -4731,7 +4774,7 @@ Giải thích:
             if (submitQuizBtn) submitQuizBtn.classList.add('hidden');
             if (retryQuizBtn) retryQuizBtn.classList.remove('hidden');
             if (resultsSummaryEl) resultsSummaryEl.classList.add('hidden');
-            if (optionsContainerEl) optionsContainerEl.classList.add('pointer-events-none');
+            if (optionsContainerEl) optionsContainerEl.classList.remove('pointer-events-none');
             
             // Vẽ lại
             renderNavigationGrid();
