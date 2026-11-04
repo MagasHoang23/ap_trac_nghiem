@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="app-build-version" content="1730709000000">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Trắc nghiệm Ôn luyện & Đồng bộ Google Drive</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Identity Services cho liên kết Google Drive -->
@@ -1081,6 +1085,29 @@
 
             applyDisplaySettings();
             setupDisplayEventListeners();
+
+            // Khởi động hệ thống kiểm tra phiên bản web ngầm
+            if (typeof VersionGuard !== 'undefined') {
+                VersionGuard.init();
+            }
+
+            // Bắn tín hiệu rời phòng khi người dùng tắt tab hoặc tải lại trang (để máy khác cập nhật ngay)
+            window.addEventListener('beforeunload', () => {
+                if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
+                    RealtimeSync.broadcast({
+                        action: 'PRESENCE_LEAVE',
+                        deviceId: RealtimeSync.deviceId
+                    });
+                }
+            });
+            window.addEventListener('pagehide', () => {
+                if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
+                    RealtimeSync.broadcast({
+                        action: 'PRESENCE_LEAVE',
+                        deviceId: RealtimeSync.deviceId
+                    });
+                }
+            });
         }
 
         function applyDisplaySettings() {
@@ -1693,6 +1720,79 @@ function doGet(e) {
         }
 
         // =========================================================================
+        // HỆ THỐNG PHÁT HIỆN & BẢO VỆ PHIÊN BẢN WEB (VersionGuard)
+        // Cấm thiết bị chạy bản cũ đồng bộ / ghi đè; Tự động xóa cache & tải lại
+        // =========================================================================
+        const APP_BUILD_VERSION = 1730709000000;
+
+        const VersionGuard = {
+            currentBuild: APP_BUILD_VERSION,
+            isBlocked: false,
+            checkTimer: null,
+
+            // Kiểm tra ngầm xem server/GitHub Pages có bản cập nhật mới không
+            async checkServerUpdate() {
+                if (this.isBlocked) return;
+                try {
+                    const checkUrl = window.location.pathname + '?_chk=' + Date.now();
+                    const res = await fetch(checkUrl, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                    });
+                    if (!res.ok) return;
+                    const htmlText = await res.text();
+                    const match = htmlText.match(/meta\s+name=["']app-build-version["']\s+content=["'](\d+)["']/i);
+                    if (match && match[1]) {
+                        const serverBuild = parseInt(match[1]);
+                        if (serverBuild > this.currentBuild) {
+                            this.handleOutdatedVersion(serverBuild, 'Máy chủ có bản cập nhật mới');
+                        }
+                    }
+                } catch(e) {}
+            },
+
+            // Khóa đồng bộ và ép tự động tải lại phiên bản mới nhất
+            handleOutdatedVersion(newerVersion, reason = 'Phát hiện phiên bản mới') {
+                if (this.isBlocked) return;
+                this.isBlocked = true;
+                console.warn(`🛑 VersionGuard: Phiên bản web hiện tại (${this.currentBuild}) đã cũ hơn (${newerVersion}). CẤM ĐỒNG BỘ và đang tự động tải lại phiên bản mới nhất...`);
+
+                // 1. Khóa ngay kết nối WebSocket để không phát sinh bất kỳ ghi đè nào
+                if (typeof RealtimeSync !== 'undefined') {
+                    RealtimeSync.isConnected = false;
+                    if (RealtimeSync.ws) {
+                        try { RealtimeSync.ws.close(); } catch(e) {}
+                    }
+                }
+
+                // 2. Thông báo khẩn cấp cho người dùng
+                showLiveToast(`🔄 ${reason}! Đang tự động làm mới để cập nhật phiên bản mới nhất...`);
+
+                // 3. Xóa cache và ép tải lại URL có tham số phiên bản mới
+                setTimeout(() => {
+                    const targetUrl = window.location.pathname + '?_v=' + newerVersion;
+                    window.location.replace(targetUrl);
+                }, 500);
+            },
+
+            init() {
+                // Kiểm tra ngay sau 2.5 giây khi trang tải xong
+                setTimeout(() => this.checkServerUpdate(), 2500);
+
+                // Kiểm tra định kỳ mỗi 35 giây
+                this.checkTimer = setInterval(() => this.checkServerUpdate(), 35000);
+
+                // Kiểm tra tức thì mỗi khi mở lại tab hoặc đổi ứng dụng
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        this.checkServerUpdate();
+                    }
+                });
+            }
+        };
+
+        // =========================================================================
         // REALTIME LIVE SYNC ENGINE (ĐỒNG BỘ THỜI GIAN THỰC ĐA THIẾT BỊ < 100MS)
         // =========================================================================
         const RealtimeSync = {
@@ -1704,7 +1804,20 @@ function doGet(e) {
             followNavigation: true,
             _isRemoteNavigating: false,
             _lastMsgTime: 0,
-            deviceId: 'dev_' + Math.random().toString(36).substring(2, 9),
+            // ĐỊNH DANH THIẾT BỊ DUY NHẤT & BẢO LƯU TRONG LOCALSTORAGE
+            // (Chống lỗi F5 lại trang khiến số lượng máy online bị tăng dần 2, 3, 4, 5...)
+            deviceId: (function() {
+                try {
+                    let id = localStorage.getItem('ap_quiz_persistent_dev_id_v3');
+                    if (!id) {
+                        id = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36).slice(-4);
+                        localStorage.setItem('ap_quiz_persistent_dev_id_v3', id);
+                    }
+                    return id;
+                } catch(e) {
+                    return 'dev_tmp_' + Math.random().toString(36).substring(2, 9);
+                }
+            })(),
             // Cụm máy chủ relay tốc độ cao, tự động luân phiên
             RELAY_SERVERS: ['ntfy.adminforge.de', 'ntfy.envs.net', 'ntfy.sh'],
             serverIndex: 0,
@@ -1762,7 +1875,8 @@ function doGet(e) {
             cleanStalePeers() {
                 const now = Date.now();
                 for (const [id, peer] of this.peers.entries()) {
-                    if (now - peer.lastSeen > 65000) {
+                    // Nếu quá 32 giây không có tín hiệu ping hoặc tin nhắn thì coi như đã tắt/rời phòng
+                    if (now - peer.lastSeen > 32000) {
                         this.peers.delete(id);
                     }
                 }
@@ -1915,19 +2029,20 @@ function doGet(e) {
 
             startKeepAlive() {
                 this.stopKeepAlive();
-                // Gửi định kỳ 25 giây tín hiệu hiện diện nhẹ (< 20 bytes) để các máy nhận biết nhau cùng online
+                // Gửi định kỳ 12 giây tín hiệu hiện diện (< 20 bytes) để các máy duy trì danh sách online chính xác
                 this.keepAliveTimer = setInterval(() => {
-                    if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN && !VersionGuard.isBlocked) {
                         this.broadcast({
                             action: 'PRESENCE_PING',
                             deviceType: this.getDeviceType(),
-                            timestamp: this.lastActiveTimestamp
+                            timestamp: this.lastActiveTimestamp,
+                            appVersion: APP_BUILD_VERSION
                         });
                         this.cleanStalePeers();
                         this.updateHeaderPeerBadge();
                         this.updatePeerModalUI();
                     }
-                }, 25000);
+                }, 12000);
             },
 
             stopKeepAlive() {
@@ -1938,9 +2053,15 @@ function doGet(e) {
             },
 
             async broadcast(actionObj) {
+                // CHẶN ĐỒNG BỘ NẾU ĐANG CHẠY PHIÊN BẢN CŨ
+                if (VersionGuard.isBlocked) {
+                    console.warn("🛑 VersionGuard: Đã chặn gửi tin nhắn vì ứng dụng đang chạy bản cũ.");
+                    return false;
+                }
                 if (!this.topic || !CloudSyncManager.currentUser) return false;
                 try {
                     actionObj.deviceId = this.deviceId;
+                    actionObj.appVersion = APP_BUILD_VERSION;
                     if (!actionObj.timestamp) actionObj.timestamp = Date.now();
 
                     // 1. Phát siêu tốc tức thì cho các tab/cửa sổ cùng máy qua BroadcastChannel (< 1ms)
@@ -2008,10 +2129,25 @@ function doGet(e) {
             },
 
             async pushFullStateToPeers(alertOnDone = false) {
+                if (VersionGuard.isBlocked) {
+                    VersionGuard.handleOutdatedVersion(Date.now(), "Phiên bản cũ");
+                    return;
+                }
                 if (!currentQuizQuestions || currentQuizQuestions.length === 0) {
                     if (alertOnDone) alert("Hiện tại chưa có câu hỏi nào để đồng bộ. Vui lòng nạp đề thi trước.");
                     return;
                 }
+
+                // BẢO VỆ DỮ LIỆU: CẤM MÁY CÓ DỮ LIỆU CŨ PHÁT ĐI GHI ĐÈ BỘ ĐỀ MỚI CỦA MÁY KHÁC
+                this.cleanStalePeers();
+                const maxPeerTime = Math.max(0, ...Array.from(this.peers.values()).map(p => p.lastActiveTimestamp || 0));
+                if (maxPeerTime > this.lastActiveTimestamp + 2000) {
+                    console.warn("🛑 Chặn đẩy đề: Thiết bị khác đang có dữ liệu mới hơn. Đang kéo về...");
+                    showLiveToast("⚠️ Thiết bị khác có dữ liệu mới hơn! Đang tự động kéo bản mới...");
+                    this.requestFullStateFromPeers();
+                    return;
+                }
+
                 this.touchActiveTime();
                 const snapshot = (typeof CloudSyncManager !== 'undefined') ? CloudSyncManager.getCurrentSnapshot() : null;
 
@@ -2145,11 +2281,29 @@ function doGet(e) {
             handleRemoteAction(payload) {
                 if (!payload || !payload.action) return;
 
+                // 1. KIỂM TRA PHIÊN BẢN WEB (Bản cũ cấm đồng bộ và tự động làm mới ngay)
+                if (payload.appVersion && payload.appVersion > APP_BUILD_VERSION) {
+                    VersionGuard.handleOutdatedVersion(payload.appVersion, payload.deviceType || 'Thiết bị khác');
+                    return;
+                }
+                if (VersionGuard.isBlocked) return;
+
+                // 2. XỬ LÝ KHI THIẾT BỊ RỜI PHÒNG (PRESENCE_LEAVE - Đóng tab hoặc F5)
+                if (payload.action === 'PRESENCE_LEAVE') {
+                    if (payload.deviceId && this.peers.has(payload.deviceId)) {
+                        this.peers.delete(payload.deviceId);
+                        this.updateHeaderPeerBadge();
+                        this.updatePeerModalUI();
+                    }
+                    return;
+                }
+
                 // Tự động ghi nhận thiết bị gửi tin nhắn vào danh sách peers online
                 if (payload.deviceId && payload.deviceId !== this.deviceId) {
                     this.registerPeer(payload.deviceId, payload.deviceType, {
                         questionCount: payload.questionCount,
-                        answeredCount: payload.answeredCount
+                        answeredCount: payload.answeredCount,
+                        lastActiveTimestamp: payload.lastActiveTimestamp || payload.timestamp
                     });
                 }
 
@@ -2892,6 +3046,13 @@ function doGet(e) {
             },
 
             async pushToCloud(isManual = false) {
+                // CHẶN CẬP NHẬT NẾU ĐANG CHẠY PHIÊN BẢN CŨ
+                if (VersionGuard.isBlocked) {
+                    alert("⚠️ Ứng dụng trên thiết bị này chưa phải là phiên bản mới nhất. Đang tự động tải lại để cập nhật...");
+                    VersionGuard.handleOutdatedVersion(Date.now(), "Phiên bản cũ");
+                    return false;
+                }
+
                 if (!this.currentUser) {
                     if (isManual) alert("Vui lòng đăng nhập tài khoản và mật khẩu trước khi đồng bộ.");
                     return false;
@@ -2908,6 +3069,13 @@ function doGet(e) {
 
                 // BẢO VỆ DỮ LIỆU: Không bao giờ tự động đẩy bộ đề rỗng lên kho chung Google Drive
                 if (!isManual && (!currentQuizQuestions || currentQuizQuestions.length === 0)) {
+                    return false;
+                }
+
+                // BẢO VỆ DỮ LIỆU: CẤM MÁY CÓ DỮ LIỆU CŨ TỰ ĐỘNG GHI ĐÈ LÊN CLOUD
+                const localTime = parseInt(localStorage.getItem('quiz_local_last_updated')) || this.lastSyncedTimestamp || 0;
+                if (!isManual && this.lastSyncedTimestamp && this.lastSyncedTimestamp > localTime + 2000) {
+                    console.warn("🛑 Chặn pushToCloud: Bản cục bộ cũ hơn bản đã đồng bộ trên kho chung Google Drive.");
                     return false;
                 }
 
