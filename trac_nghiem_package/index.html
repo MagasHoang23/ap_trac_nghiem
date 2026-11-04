@@ -1005,7 +1005,7 @@
         let currentFontSize = 'base'; // 'sm' | 'base' | 'lg' | 'xl'
         let currentTextAlign = 'left'; // 'left' | 'justify'
         let currentBadgeStyle = 'letters'; // 'letters' ('A, B, C, D') | 'numbers' ('1, 2, 3, 4')
-        const shouldShuffleOptions = true; // LUÔN LUÔN XÁO TRỘN ĐÁP ÁN (CƠ CHẾ MẶC ĐỊNH DUY NHẤT)
+        let shouldShuffleOptions = true; // Mặc định xáo trộn vị trí đáp án (có thể bật/tắt)
         let isMobileNavCollapsed = false;
 
         function initDisplaySettings() {
@@ -1016,6 +1016,9 @@
                     currentFontSize = parsed.fontSize || 'base';
                     currentTextAlign = parsed.textAlign || 'left';
                     currentBadgeStyle = parsed.badgeStyle || 'letters';
+                    if (typeof parsed.shuffleOptions === 'boolean') {
+                        shouldShuffleOptions = parsed.shuffleOptions;
+                    }
                 }
             } catch (e) { console.warn("Lỗi đọc cài đặt hiển thị:", e); }
 
@@ -1050,7 +1053,8 @@
                 localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
                     fontSize: currentFontSize,
                     textAlign: currentTextAlign,
-                    badgeStyle: currentBadgeStyle
+                    badgeStyle: currentBadgeStyle,
+                    shuffleOptions: shouldShuffleOptions
                 }));
             } catch (e) {}
         }
@@ -3282,7 +3286,9 @@ function doGet(e) {
                                 question.originalOptions = [...question.options];
                             }
                             // LUÔN LUÔN XÁO TRỘN ĐÁP ÁN (CƠ CHẾ MẶC ĐỊNH DUY NHẤT)
-                            shuffleArray(question.options);
+                            if (shouldShuffleOptions) {
+                                shuffleArray(question.options);
+                            }
                             if (question.correctAnswer && question.correctAnswer.endsWith('*')) {
                                 question.correctAnswer = question.correctAnswer.slice(0, -1).trim();
                             }
