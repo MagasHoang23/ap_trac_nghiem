@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="app-build-version" content="1730709000000">
+    <meta name="app-build-version" content="1730718000000">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -154,9 +154,16 @@
         button, a, [role="button"] {
             touch-action: manipulation;
         }
-        .nav-grid-cell.flagged .flag-indicator::after {
-            content: ' 🚩';
-            font-size: 0.7em;
+        .nav-grid-cell.flagged::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 7px;
+            height: 7px;
+            border-radius: 9999px;
+            background-color: #f59e0b;
+            box-shadow: 0 0 0 1.5px #ffffff;
         }
         /* Custom scrollbar for attempt history */
         #attempt-history-list::-webkit-scrollbar {
@@ -368,75 +375,128 @@
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen text-gray-800">
 
-    <header class="bg-slate-800 text-white px-3 sm:px-6 py-3 shadow-md shrink-0 border-b border-slate-700 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+    <header class="bg-slate-900 text-white px-3 sm:px-6 py-2.5 sm:py-3 shadow-lg shrink-0 border-b border-slate-700/80 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
             <!-- Logo & Title -->
-            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-md shrink-0">
-                    <span class="text-base sm:text-lg">🎯</span>
+            <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-900/40 ring-1 ring-white/10 shrink-0">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14v7"/>
+                    </svg>
                 </div>
                 <div class="min-w-0">
-                    <h1 class="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate">Trắc nghiệm Ôn luyện</h1>
-                    <p class="text-[10px] sm:text-[11px] text-slate-300 hidden md:block">Đồng bộ đám mây Google Drive đa thiết bị • Mã hóa bảo mật</p>
+                    <h1 class="text-xs sm:text-base font-bold tracking-tight text-white flex items-center gap-1">
+                        <span>Trắc nghiệm</span>
+                        <span class="hidden sm:inline font-semibold text-slate-300">Ôn luyện</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 hidden lg:block leading-tight">Đồng bộ Google Drive & Đa thiết bị Realtime</p>
                 </div>
             </div>
 
             <!-- Header Action Controls -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <!-- Nút Đồng bộ 2 thiết bị Realtime (P2P) -->
-                <button id="btn-quick-peer-sync" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm active:scale-95" title="Đồng bộ thời gian thực đa thiết bị (Điện thoại, Máy tính, iPad...)">
-                    <span class="text-sm">📲</span>
-                    <span id="peer-sync-btn-label" class="hidden xs:inline sm:inline">Đồng bộ đa máy</span>
-                    <span id="peer-online-count-badge" class="ml-0.5 sm:ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-emerald-800 text-emerald-100 hidden xs:inline-block sm:inline-block">1 máy</span>
+                <button id="btn-quick-peer-sync" class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm active:scale-95 shrink-0" title="Đồng bộ thời gian thực đa thiết bị (Điện thoại, Máy tính, iPad...)">
+                    <svg class="w-4 h-4 text-emerald-100 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span id="peer-sync-btn-label" class="hidden sm:inline font-medium">Đồng bộ</span>
+                    <span id="peer-online-count-badge" class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-800 text-emerald-100 flex items-center gap-1 shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                        <span id="peer-count-number">1</span>
+                        <span class="hidden sm:inline">máy</span>
+                    </span>
                 </button>
 
                 <!-- Nút Đồng bộ Google Drive -->
-                <button id="cloud-sync-btn" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600 transition-all shadow-sm active:scale-95" title="Mở quản lý tài khoản & đồng bộ đám mây">
-                    <span id="sync-icon" class="text-sm">☁️</span>
-                    <span id="sync-label" class="hidden xs:inline sm:inline">Cloud Sync</span>
+                <button id="cloud-sync-btn" class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 transition-all shadow-sm active:scale-95 shrink-0" title="Mở quản lý tài khoản & đồng bộ đám mây Google Drive">
+                    <span id="sync-icon" class="text-sm flex items-center shrink-0">
+                        <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
+                        </svg>
+                    </span>
+                    <span id="sync-label" class="hidden sm:inline font-medium">Cloud Sync</span>
                 </button>
 
-                <!-- Thanh công cụ Căn chỉnh kích thước, Căn lề, Thẻ đáp án & Xáo trộn -->
-                <div class="flex items-center bg-slate-700 rounded-lg p-0.5 border border-slate-600 text-xs">
-                    <button id="btn-font-decrease" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200" title="Giảm cỡ chữ">A-</button>
-                    <button id="btn-font-reset" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200 text-[11px]" title="Cỡ chữ chuẩn">A</button>
-                    <button id="btn-font-increase" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200" title="Tăng cỡ chữ">A+</button>
-                    <span class="w-[1px] h-3.5 bg-slate-600 mx-0.5"></span>
-                    <button id="btn-align-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 text-slate-200" title="Căn lề (Trái / Căn đều)">
-                        <span id="align-icon">☰</span>
+                <!-- Thanh công cụ Căn chỉnh kích thước, Căn lề, Thẻ đáp án (Desktop) -->
+                <div class="hidden sm:flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-xs shrink-0">
+                    <button id="btn-font-decrease" class="px-2 py-1 rounded hover:bg-slate-700 font-bold text-slate-200 transition-colors" title="Giảm cỡ chữ (A-)">A-</button>
+                    <button id="btn-font-reset" class="px-2 py-1 rounded hover:bg-slate-700 font-bold text-slate-200 text-[11px] transition-colors" title="Cỡ chữ chuẩn (A)">A</button>
+                    <button id="btn-font-increase" class="px-2 py-1 rounded hover:bg-slate-700 font-bold text-slate-200 transition-colors" title="Tăng cỡ chữ (A+)">A+</button>
+                    <span class="w-[1px] h-3.5 bg-slate-700 mx-0.5"></span>
+                    <button id="btn-align-toggle" class="px-2 py-1 rounded hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-colors" title="Căn lề (Trái / Căn đều)">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h16"/>
+                        </svg>
                     </button>
-                    <span class="w-[1px] h-3.5 bg-slate-600 mx-0.5"></span>
-                    <!-- Nút đổi kiểu thẻ đáp án: Chữ cái A B C D vs Số 1 2 3 4 -->
-                    <button id="btn-badge-style-toggle" class="px-1.5 sm:px-2 py-1 rounded hover:bg-slate-600 font-bold text-slate-200 text-[11px]" title="Đổi kiểu thẻ đáp án: A, B, C, D hoặc 1, 2, 3, 4">
-                        <span id="badge-style-label">A/1</span>
+                    <span class="w-[1px] h-3.5 bg-slate-700 mx-0.5"></span>
+                    <button id="btn-badge-style-toggle" class="px-2 py-1 rounded hover:bg-slate-700 font-bold text-slate-200 text-[11px] transition-colors" title="Đổi kiểu thẻ đáp án: A, B, C, D hoặc 1, 2, 3, 4">
+                        <span id="badge-style-label">A-D</span>
                     </button>
-
                 </div>
 
+                <!-- Nút hiển thị thanh cài đặt hiển thị trên Mobile (Aa) -->
+                <button id="btn-mobile-display-toggle" class="sm:hidden px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-sm flex items-center gap-1 active:scale-95 shrink-0" title="Cài đặt hiển thị & cỡ chữ">
+                    <span>Aa</span>
+                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
                 <!-- Nút Toggle danh sách câu hỏi trên Mobile -->
-                <button id="btn-mobile-nav-toggle" class="md:hidden px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1" title="Ẩn/Hiện danh sách câu">
-                    <span>📋</span>
+                <button id="btn-mobile-nav-toggle" class="md:hidden px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm flex items-center gap-1.5 active:scale-95 shrink-0" title="Ẩn/Hiện danh sách câu">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                    </svg>
                     <span id="mobile-nav-label">DS</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Thanh phụ cài đặt hiển thị mở rộng trên Mobile (ẩn/hiện khi bấm Aa) -->
+        <div id="mobile-display-drawer" class="hidden sm:hidden mt-2 pt-2 border-t border-slate-700/80 flex items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-1.5 text-slate-300 font-medium">
+                <span class="text-[11px] text-slate-400">Cỡ chữ:</span>
+                <div class="inline-flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+                    <button id="btn-font-decrease-m" class="px-2 py-0.5 rounded hover:bg-slate-700 font-bold text-slate-200">A-</button>
+                    <button id="btn-font-reset-m" class="px-2 py-0.5 rounded hover:bg-slate-700 font-bold text-slate-200 text-[11px]">A</button>
+                    <button id="btn-font-increase-m" class="px-2 py-0.5 rounded hover:bg-slate-700 font-bold text-slate-200">A+</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button id="btn-align-toggle-m" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center gap-1 font-medium text-[11px]" title="Căn lề">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h16"/>
+                    </svg>
+                    <span id="align-label-m">Căn trái</span>
+                </button>
+                <button id="btn-badge-style-toggle-m" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px]" title="Đổi kiểu thẻ">
+                    <span id="badge-style-label-m">A-D</span>
                 </button>
             </div>
         </div>
     </header>
 
     <div class="flex-grow flex flex-col md:flex-row p-2 md:p-4 gap-2 md:gap-4 min-h-0">
-        <div id="quiz-area" class="flex-grow md:w-2/3 lg:w-3/4 bg-white p-4 md:p-6 rounded-lg shadow-xl flex flex-col min-h-0 overflow-hidden resize-y">
+        <div id="quiz-area" class="flex-grow md:w-2/3 lg:w-3/4 bg-white p-4 md:p-6 rounded-2xl shadow-xl flex flex-col min-h-0 overflow-hidden resize-y border border-slate-100">
             <!-- Hàng thông tin câu hỏi, đồng hồ & căn chỉnh -->
             <div class="flex flex-wrap justify-between items-center mb-3 pb-2.5 border-b border-gray-200 gap-2 shrink-0">
                 <div class="flex items-center gap-2">
-                    <div id="question-info" class="text-base sm:text-lg font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">Câu 1/0</div>
+                    <div id="question-info" class="text-sm sm:text-base font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-xs">Câu 1/0</div>
                     <!-- Indicator căn chỉnh hiện tại -->
                     <span id="current-display-pill" class="text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 hidden sm:inline">Cỡ chuẩn • Căn trái</span>
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <div id="timer" class="text-base sm:text-lg font-mono font-bold bg-slate-100 px-3 py-1 rounded-lg text-slate-700 border border-slate-200 shadow-inner">00:00</div>
-                    <button id="flag-question-btn" class="flex items-center px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-semibold rounded-lg transition-all text-xs sm:text-sm shadow-sm active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
-                        <span class="ml-1.5">Cắm cờ</span>
+                    <div class="flex items-center gap-1.5 text-sm sm:text-base font-mono font-bold bg-slate-100 px-2.5 sm:px-3 py-1 rounded-lg text-slate-700 border border-slate-200 shadow-inner">
+                        <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span id="timer">00:00</span>
+                    </div>
+                    <button id="flag-question-btn" class="flex items-center px-2.5 sm:px-3 py-1 bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold rounded-lg transition-all text-xs sm:text-sm shadow-sm active:scale-95">
+                        <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                        <span class="ml-1">Cắm cờ</span>
                     </button>
                 </div>
             </div>
@@ -449,21 +509,39 @@
             </div>
 
             <div class="pt-4 border-t flex justify-between shrink-0">
-                <button id="prev-question-btn" class="px-4 py-2 md:px-6 md:py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">Câu trước</button>
-                <button id="next-question-btn" class="px-4 py-2 md:px-6 md:py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Câu kế tiếp</button>
+                <button id="prev-question-btn" class="flex items-center gap-1.5 px-4 py-2 md:px-5 md:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all border border-slate-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-xs sm:text-sm">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    <span>Câu trước</span>
+                </button>
+                <button id="next-question-btn" class="flex items-center gap-1.5 px-4 py-2 md:px-6 md:py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-md shadow-blue-500/20 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-xs sm:text-sm">
+                    <span>Câu kế tiếp</span>
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
         </div>
 
         <div class="md:w-1/3 lg:w-1/4 flex flex-col gap-2 md:gap-4 min-h-0 shrink-0 min-w-[280px]">
-            <div id="navigation-grid-container" class="bg-white p-3 md:p-4 rounded-lg shadow-xl flex flex-col min-h-0">
-                <h3 class="text-base md:text-lg font-semibold mb-3 text-center text-slate-700 shrink-0">Danh sách câu hỏi</h3>
-                <div id="navigation-grid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 gap-1 md:gap-2 overflow-y-auto custom-scroll p-1 pr-2 content-start max-h-[300px] md:max-h-[400px]">
-                    </div>
+            <div id="navigation-grid-container" class="bg-white p-3 md:p-4 rounded-2xl shadow-xl flex flex-col min-h-0 border border-slate-100">
+                <h3 class="text-base md:text-lg font-bold mb-3 text-center text-slate-700 shrink-0 flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    <span>Danh sách câu hỏi</span>
+                </h3>
+                <div id="navigation-grid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 gap-1.5 md:gap-2 overflow-y-auto custom-scroll p-1 pr-2 content-start max-h-[300px] md:max-h-[400px]">
+                </div>
             </div>
-            <div id="controls-submission" class="bg-white p-3 md:p-4 rounded-lg shadow-xl shrink-0">
-                <button id="submit-quiz-btn" class="w-full px-4 py-2 md:px-6 md:py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors mb-2 text-sm md:text-base">Nộp bài</button>
-                <button id="retry-quiz-btn" class="w-full px-4 py-2 md:px-6 md:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors hidden mb-2 text-sm md:text-base">Làm lại</button>
-                <button id="load-new-quiz-btn" class="w-full px-4 py-2 md:px-6 md:py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm md:text-base">Thiết lập đề mới</button>
+            <div id="controls-submission" class="bg-white p-3 md:p-4 rounded-2xl shadow-xl shrink-0 space-y-2 border border-slate-100">
+                <button id="submit-quiz-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 md:py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 text-xs sm:text-sm md:text-base">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Nộp bài thi</span>
+                </button>
+                <button id="retry-quiz-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 md:py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl transition-all shadow-md shadow-amber-600/20 active:scale-95 hidden text-xs sm:text-sm md:text-base">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Làm lại bài này</span>
+                </button>
+                <button id="load-new-quiz-btn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 md:py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-xl transition-all shadow-md shadow-slate-800/20 active:scale-95 text-xs sm:text-sm md:text-base">
+                    <svg class="w-4 h-4 text-indigo-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Thiết lập đề mới</span>
+                </button>
             </div>
             <div id="results-summary" class="bg-white p-3 md:p-4 rounded-lg shadow-xl hidden overflow-y-auto custom-scroll max-h-[30vh]">
                 <h3 class="text-base md:text-lg font-semibold mb-2 text-slate-700">Kết quả</h3>
@@ -490,14 +568,18 @@
     <div id="peer-sync-modal" class="modal-overlay hidden">
         <div class="modal-content bg-white p-5 rounded-2xl shadow-2xl w-full max-w-md animate-scale-up">
             <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">📲</span>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shadow-sm shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
                     <div>
-                        <h3 class="font-bold text-base text-slate-800">Đồng bộ đa thiết bị thời gian thực</h3>
-                        <p class="text-[11px] text-gray-500">Tự động kết nối tất cả điện thoại, máy tính, iPad cùng đăng nhập (<100ms)</p>
+                        <h3 class="font-bold text-sm sm:text-base text-slate-800">Đồng bộ đa thiết bị thời gian thực</h3>
+                        <p class="text-[11px] text-gray-500">Tự động kết nối tất cả điện thoại, máy tính, iPad cùng đăng nhập (&lt;100ms)</p>
                     </div>
                 </div>
-                <button id="close-peer-modal-btn" class="text-gray-400 hover:text-gray-600 font-bold text-lg p-1 rounded-lg">✕</button>
+                <button id="close-peer-modal-btn" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors" title="Đóng">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
             <div class="space-y-3 text-xs text-slate-700">
@@ -513,7 +595,10 @@
                 <!-- DANH SÁCH THIẾT BỊ ĐANG ONLINE CÙNG PHÒNG -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between font-bold text-slate-700 text-xs">
-                        <span>📱 Thiết bị đang kết nối (<span id="peer-count-text">1 máy</span>):</span>
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <span>Thiết bị đang kết nối (<span id="peer-count-text">1 máy</span>):</span>
+                        </span>
                         <span class="text-[10px] font-normal text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">Trực tuyến</span>
                     </div>
                     <div id="peer-device-list" class="space-y-1.5 max-h-36 overflow-y-auto custom-scroll pr-1">
@@ -522,16 +607,16 @@
                 </div>
 
                 <div class="space-y-1.5">
-                    <button id="btn-modal-push-quiz" type="button" class="w-full p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 text-xs sm:text-sm">
-                        <span class="text-base">📤</span>
+                    <button id="btn-modal-push-quiz" type="button" class="w-full p-2.5 sm:p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 text-xs sm:text-sm">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                         <span id="push-btn-label">Đẩy bộ đề máy này sang máy kia ngay</span>
                     </button>
                     <p class="text-[11px] text-gray-500 text-center">Bấm nút trên để tất cả thiết bị khác (điện thoại, máy tính, iPad) cùng nhận ngay bộ đề đang mở trên máy này.</p>
                 </div>
 
                 <div class="space-y-1.5 pt-2 border-t border-gray-100">
-                    <button id="btn-modal-pull-quiz" type="button" class="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-300 transition-all active:scale-95 text-xs sm:text-sm">
-                        <span class="text-base">📥</span>
+                    <button id="btn-modal-pull-quiz" type="button" class="w-full p-2.5 sm:p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-300 transition-all active:scale-95 text-xs sm:text-sm">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         <span>Kéo bộ đề từ máy kia về máy này</span>
                     </button>
                     <p class="text-[11px] text-gray-500 text-center">Bấm nút trên nếu bạn muốn cập nhật bộ đề và tiến trình làm bài mới nhất từ các máy khác về máy này.</p>
@@ -540,7 +625,10 @@
                 <div class="pt-2.5 border-t border-gray-100 flex items-center justify-between">
                     <label for="modal-toggle-follow" class="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox" id="modal-toggle-follow" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4" checked>
-                        <span class="font-semibold text-slate-800 text-xs">🔗 Tự động lật câu hỏi theo máy kia (Follow navigation)</span>
+                        <span class="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                            <span>Tự động lật câu hỏi theo máy kia (Follow navigation)</span>
+                        </span>
                     </label>
                 </div>
             </div>
@@ -552,34 +640,50 @@
             <!-- Header Modal -->
             <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-4">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold border border-blue-200 shadow-sm">
-                        ☁️
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 shadow-sm shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
                     </div>
                     <div>
-                        <h2 class="text-lg sm:text-xl font-bold text-slate-800">Đồng bộ Google Drive & Tài khoản</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800">Đồng bộ Google Drive & Tài khoản</h2>
                         <p class="text-xs text-gray-500">Bảo mật mã hóa đầu cuối (AES-256) • Đồng bộ dữ liệu ngầm đa thiết bị</p>
                     </div>
                 </div>
-                <button id="close-cloud-modal-btn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 rounded-lg">✕</button>
+                <button id="close-cloud-modal-btn" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors" title="Đóng">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
             <!-- Tab Navigation -->
             <div class="flex border-b border-gray-200 mb-4 text-xs sm:text-sm font-semibold">
-                <button id="cloud-tab-auth" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 transition-colors">🔐 Tài khoản & Mật khẩu</button>
-                <button id="cloud-tab-drive" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">☁️ Kết nối Google Drive</button>
-                <button id="cloud-tab-backup" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">⚙️ Quản trị & Đồng bộ</button>
+                <button id="cloud-tab-auth" class="px-3 sm:px-4 py-2 border-b-2 border-blue-600 text-blue-600 transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>Tài khoản & Mật khẩu</span>
+                </button>
+                <button id="cloud-tab-drive" class="px-3 sm:px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                    <span>Kết nối Google Drive</span>
+                </button>
+                <button id="cloud-tab-backup" class="px-3 sm:px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>Quản trị & Đồng bộ</span>
+                </button>
             </div>
 
             <!-- TAB 1: ĐĂNG NHẬP / ĐĂNG KÝ (TÀI KHOẢN & MẬT KHẨU) -->
             <div id="cloud-view-auth" class="space-y-4">
                 <div class="bg-blue-50/70 border border-blue-200 p-3 rounded-xl text-xs text-blue-900 leading-relaxed">
-                    <p class="font-bold mb-1">🛡️ Cơ chế bảo mật:</p>
+                    <p class="font-bold mb-1 flex items-center gap-1.5 text-blue-900">
+                        <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        <span>Cơ chế bảo mật mã hóa:</span>
+                    </p>
                     <p>Mỗi tài khoản Google Drive đi kèm <strong>1 mật khẩu do bạn tự đặt</strong>. Dữ liệu đề thi, tiến trình và lịch sử làm bài sẽ được <strong>mã hóa bằng mật khẩu này (AES-GCM 256)</strong> trước khi đẩy lên Google Drive. Chỉ khi nhập đúng tài khoản và mật khẩu thì mới có thể giải mã và khôi phục dữ liệu.</p>
                 </div>
 
                 <div id="auth-status-card" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="text-emerald-600 text-lg">✅</span>
+                        <span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </span>
                         <div>
                             <div class="text-xs text-gray-500">Đang đăng nhập tài khoản:</div>
                             <div id="auth-current-user" class="font-bold text-slate-800 text-sm">user@gmail.com</div>
@@ -598,7 +702,9 @@
                         <label class="block text-xs font-bold text-slate-700 mb-1">Mật khẩu bảo vệ dữ liệu:</label>
                         <div class="relative">
                             <input type="password" id="auth-input-password" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10" placeholder="Nhập mật khẩu bảo vệ...">
-                            <button type="button" id="toggle-password-visibility-btn" class="absolute right-2.5 top-2.5 text-xs text-gray-500 hover:text-gray-700 font-bold select-none">👁️</button>
+                            <button type="button" id="toggle-password-visibility-btn" class="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-700 select-none p-0.5" title="Hiện/Ẩn mật khẩu">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
                         </div>
                         <p class="text-[11px] text-gray-500 mt-1">Ghi nhớ mật khẩu này để mở và giải mã dữ liệu khi đổi sang thiết bị khác.</p>
                     </div>
@@ -607,11 +713,13 @@
                     <div id="auth-success-msg" class="text-xs text-emerald-700 hidden bg-emerald-50 p-2 rounded border border-emerald-200"></div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                        <button id="btn-login-and-restore" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                            <span>🔑 Đăng nhập & Khôi phục</span>
+                        <button id="btn-login-and-restore" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                            <span>Đăng nhập & Khôi phục</span>
                         </button>
-                        <button id="btn-register-new" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                            <span>✨ Đăng ký & Khởi tạo</span>
+                        <button id="btn-register-new" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                            <span>Đăng ký & Khởi tạo</span>
                         </button>
                     </div>
                 </div>
@@ -693,21 +801,28 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <button id="btn-manual-sync-now" class="p-3 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95">
-                        <span>🚀 Đẩy lên Google Drive ngay</span>
+                        <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span>Đẩy lên Google Drive ngay</span>
                     </button>
                     <button id="btn-manual-fetch-now" class="p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95">
-                        <span>📥 Kéo dữ liệu từ Drive về máy</span>
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>Kéo dữ liệu từ Drive về máy</span>
                     </button>
                 </div>
 
                 <div class="pt-2 border-t border-gray-200">
-                    <p class="font-bold text-xs text-slate-700 mb-2">💾 Sao lưu ngoại tuyến (Offline Vault Backup):</p>
+                    <p class="font-bold text-xs text-slate-700 mb-2 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        <span>Sao lưu ngoại tuyến (Offline Vault Backup):</span>
+                    </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        <button id="btn-export-offline-json" class="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg border border-gray-300 font-semibold flex items-center justify-center gap-1.5">
-                            <span>📦 Xuất file (.json) về máy</span>
+                        <button id="btn-export-offline-json" class="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl border border-gray-300 font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                            <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Xuất file (.json) về máy</span>
                         </button>
-                        <button id="btn-import-offline-json" class="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg border border-gray-300 font-semibold flex items-center justify-center gap-1.5">
-                            <span>📂 Nạp file (.json) từ máy</span>
+                        <button id="btn-import-offline-json" class="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl border border-gray-300 font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                            <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span>Nạp file (.json) từ máy</span>
                         </button>
                         <input type="file" id="offline-json-file-input" accept=".json" class="hidden">
                     </div>
@@ -721,48 +836,60 @@
         </div>
     </div>
     <div id="confirm-submit-modal" class="modal-overlay hidden">
-        <div class="modal-content text-center"> <p id="modal-message" class="text-lg mb-4">Bạn có chắc chắn muốn nộp bài không?</p>
-            <div class="modal-buttons">
-                <button id="modal-confirm-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">Nộp bài</button>
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">Hủy</button>
+        <div class="modal-content text-center max-w-sm p-6 rounded-2xl shadow-2xl">
+            <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">Xác nhận nộp bài</h3>
+            <p id="modal-message" class="text-sm text-gray-600 mb-5">Bạn có chắc chắn muốn nộp bài thi ngay bây giờ không?</p>
+            <div class="flex items-center justify-center gap-2">
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-colors">Hủy</button>
+                <button id="modal-confirm-btn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-600/20 active:scale-95">Xác nhận nộp bài</button>
             </div>
         </div>
     </div>
 
     <div id="load-quiz-modal" class="modal-overlay hidden">
-        <div class="modal-content modal-content-scrollable bg-white p-3 sm:p-5 rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
+        <div class="modal-content modal-content-scrollable bg-white p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-3 border-b mb-3 gap-2">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span>📝 Thiết lập đề thi</span>
-                        <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2.5 py-0.5 rounded-full">Hỗ trợ định dạng phong phú</span>
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>Thiết lập đề thi</span>
+                        <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2.5 py-0.5 rounded-full hidden sm:inline">Hỗ trợ định dạng phong phú</span>
                     </h2>
                     <p class="text-xs text-gray-500 mt-0.5">Biên dịch tự động: in đậm, in nghiêng, cỡ chữ, thụt lề, danh sách, công thức và trích dẫn.</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button id="copy-ai-prompt-btn" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold px-3 py-2 rounded-lg border border-emerald-300 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Bấm để sao chép Prompt chuẩn dán vào ChatGPT / Claude / Gemini">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        <span id="copy-ai-prompt-text">🤖 Sao chép Prompt gửi AI</span>
+                    <button id="copy-ai-prompt-btn" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold px-3 py-2 rounded-xl border border-emerald-300 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95" title="Bấm để sao chép Prompt chuẩn dán vào ChatGPT / Claude / Gemini">
+                        <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                        <span id="copy-ai-prompt-text">Sao chép Prompt gửi AI</span>
                     </button>
-                    <button id="load-sample-template-btn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-2 rounded-lg border border-indigo-200 transition-colors flex items-center justify-center gap-1.5">
-                        <span>📋 Dán đề mẫu phong phú</span>
+                    <button id="load-sample-template-btn" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-2 rounded-xl border border-indigo-200 transition-colors flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Dán đề mẫu phong phú</span>
                     </button>
                 </div>
             </div>
 
             <!-- Toast thông báo sao chép prompt -->
-            <div id="copy-prompt-toast" class="hidden mb-3 p-2.5 bg-emerald-50 text-emerald-800 text-xs rounded-lg border border-emerald-300 flex items-center justify-between shadow-sm">
+            <div id="copy-prompt-toast" class="hidden mb-3 p-2.5 bg-emerald-50 text-emerald-800 text-xs rounded-xl border border-emerald-300 flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-2">
-                    <span class="text-emerald-600 font-bold text-sm">✓</span>
-                    <span><strong>Đã sao chép Prompt mẫu!</strong> Bạn chỉ cần mở ChatGPT, Claude hoặc Gemini, dán (Ctrl+V) vào và yêu cầu tạo đề. AI sẽ xuất trong khối code block chuẩn định dạng.</span>
+                    <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">✓</span>
+                    <span><strong>Đã sao chép Prompt mẫu!</strong> Mở ChatGPT, Claude hoặc Gemini, dán (Ctrl+V) vào và gửi. AI sẽ tạo đề trắc nghiệm chuẩn đẹp.</span>
                 </div>
-                <button type="button" onclick="document.getElementById('copy-prompt-toast').classList.add('hidden')" class="text-emerald-700 hover:text-emerald-900 font-bold ml-2">✕</button>
+                <button type="button" onclick="document.getElementById('copy-prompt-toast').classList.add('hidden')" class="text-emerald-700 hover:text-emerald-900 font-bold ml-2 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
             <!-- Bảng tra cứu kí tự đặc biệt -->
-            <details class="mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+            <details class="mb-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
                 <summary class="font-bold text-slate-700 cursor-pointer hover:text-blue-600 select-none flex items-center justify-between">
-                    <span>💡 Xem bảng kí tự đánh dấu đặc biệt hỗ trợ biên dịch (In đậm, In nghiêng, Cỡ chữ, Thụt lề...)</span>
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.477.859h4z"></path></svg>
+                        <span>Xem bảng kí tự đánh dấu đặc biệt hỗ trợ biên dịch (In đậm, In nghiêng, Cỡ chữ, Thụt lề...)</span>
+                    </span>
                     <span class="text-slate-400 text-xs font-normal">Bấm mở/đóng ▾</span>
                 </summary>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2.5 pt-2.5 border-t border-slate-200 text-slate-700">
@@ -786,37 +913,46 @@
             </details>
 
             <!-- Tabs: Soạn thảo vs Xem trước -->
-            <div class="flex border-b border-gray-200 mb-2">
-                <button id="modal-tab-edit" class="px-4 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-colors">✏️ Ô nhập đề thi</button>
-                <button id="modal-tab-preview" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">👁️ Xem trước biên dịch</button>
+            <div class="flex border-b border-gray-200 mb-3 text-xs sm:text-sm font-semibold">
+                <button id="modal-tab-edit" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Ô nhập đề thi</span>
+                </button>
+                <button id="modal-tab-preview" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <span>Xem trước biên dịch</span>
+                </button>
             </div>
 
             <!-- View 1: Textarea -->
             <div id="modal-edit-view">
-                <textarea id="new-quiz-data-input" class="w-full h-64 p-3 border border-gray-300 rounded-lg font-mono text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Dán nội dung đề thi vào đây..."></textarea>
+                <textarea id="new-quiz-data-input" class="w-full h-64 p-3 border border-gray-300 rounded-xl font-mono text-base md:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Dán nội dung đề thi vào đây..."></textarea>
             </div>
 
             <!-- View 2: Live Preview -->
-            <div id="modal-preview-view" class="hidden h-64 overflow-y-auto custom-scroll p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+            <div id="modal-preview-view" class="hidden h-64 overflow-y-auto custom-scroll p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm">
                 <div id="modal-preview-content"></div>
             </div>
             
             <p id="parse-error-message" class="text-red-500 text-sm mt-2 hidden"></p>
 
             <div class="modal-buttons text-right mt-4 flex justify-end gap-2">
-                <button id="cancel-load-quiz-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium">Hủy bỏ</button>
-                <button id="confirm-load-quiz-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold">Xác nhận nạp đề</button>
+                <button id="cancel-load-quiz-btn" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors text-xs sm:text-sm font-medium">Hủy bỏ</button>
+                <button id="confirm-load-quiz-btn" class="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all text-xs sm:text-sm font-semibold shadow-md shadow-blue-600/20 active:scale-95">Xác nhận nạp đề</button>
             </div>
         </div>
     </div>
     
     <div id="review-confirm-modal" class="modal-overlay hidden">
-        <div class="modal-content text-center">
-            <h3 class="text-lg font-bold mb-2 text-slate-700">Xem lại bài làm cũ?</h3>
-            <p class="text-gray-600 mb-4">Hệ thống sẽ tải lại đề bài và các đáp án bạn đã chọn trong lần thi này để bạn xem lại.</p>
-            <div class="modal-buttons justify-center flex">
-                <button id="confirm-review-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Đồng ý xem lại</button>
-                <button id="cancel-review-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">Hủy</button>
+        <div class="modal-content text-center max-w-sm p-6 rounded-2xl shadow-2xl">
+            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">Xem lại bài làm cũ?</h3>
+            <p class="text-sm text-gray-600 mb-5">Hệ thống sẽ tải lại đề bài và các đáp án bạn đã chọn trong lần thi này để bạn xem lại.</p>
+            <div class="flex items-center justify-center gap-2">
+                <button id="cancel-review-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-colors">Hủy</button>
+                <button id="confirm-review-btn" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-blue-600/20 active:scale-95">Đồng ý xem lại</button>
             </div>
         </div>
     </div>
@@ -914,7 +1050,13 @@
             // 10. Thụt lề nội tuyến: [tab], [indent]
             s = s.replace(/\[(?:tab|indent|thut)\](.*?)\[\/(?:tab|indent|thut)\]/gi, '<span class="inline-block pl-5">$1</span>');
 
-            // 11. Khôi phục lại các chỗ trống điền từ (fill-in-the-blank)
+            // 11. Thay thế các biểu tượng cảm xúc thô bằng huy hiệu vector SVG cao cấp
+            s = s.replace(/✅/g, '<span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 mr-1.5 shrink-0 align-middle"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>');
+            s = s.replace(/❌/g, '<span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 mr-1.5 shrink-0 align-middle"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></span>');
+            s = s.replace(/💡/g, '<span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 text-amber-600 mr-1.5 shrink-0 align-middle"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.477.859h4z"></path></svg></span>');
+            s = s.replace(/👉/g, '<span class="inline-flex items-center justify-center w-4 h-4 text-emerald-600 mr-1 shrink-0 align-middle"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></span>');
+
+            // 12. Khôi phục lại các chỗ trống điền từ (fill-in-the-blank)
             s = s.replace(/@@BLANK_(\d+)@@/g, (m, idx) => blanks[idx]);
 
             return s;
@@ -999,7 +1141,7 @@
                 const arrowMatch = trimmed.match(/^(?:->|=>|➜)\s*(.+)$/);
                 if (arrowMatch) {
                     const content = renderInlineRichText(escapeHtml(arrowMatch[1]));
-                    htmlLines.push(`<div class="flex items-start gap-1.5 my-1 text-blue-700 font-medium text-xs md:text-sm ${indentClass}"><span class="text-blue-500 shrink-0 select-none font-bold">➔</span><div class="flex-grow">${content}</div></div>`);
+                    htmlLines.push(`<div class="flex items-start gap-1.5 my-1 text-blue-700 font-medium text-xs md:text-sm ${indentClass}"><span class="inline-flex items-center justify-center w-4 h-4 text-blue-600 shrink-0 select-none align-middle mt-0.5"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></span><div class="flex-grow">${content}</div></div>`);
                     continue;
                 }
 
@@ -1128,9 +1270,15 @@
                 pillEl.textContent = `${sizeLabels[currentFontSize] || 'Cỡ chuẩn'} • ${alignLabels[currentTextAlign] || 'Căn trái'}`;
             }
 
-            // Cập nhật trạng thái nút công cụ
+            // Cập nhật trạng thái nút công cụ desktop & mobile
             const badgeLabel = document.getElementById('badge-style-label');
             if (badgeLabel) badgeLabel.textContent = currentBadgeStyle === 'numbers' ? '1-4' : 'A-D';
+
+            const badgeLabelM = document.getElementById('badge-style-label-m');
+            if (badgeLabelM) badgeLabelM.textContent = currentBadgeStyle === 'numbers' ? '1-4' : 'A-D';
+
+            const alignLabelM = document.getElementById('align-label-m');
+            if (alignLabelM) alignLabelM.textContent = currentTextAlign === 'justify' ? 'Căn đều' : 'Căn trái';
 
             // Lưu cài đặt
             try {
@@ -1150,41 +1298,64 @@
             const btnAlign = document.getElementById('btn-align-toggle');
             const btnMobileNav = document.getElementById('btn-mobile-nav-toggle');
 
+            // Mobile display drawer & controls
+            const btnMobileDisplayToggle = document.getElementById('btn-mobile-display-toggle');
+            const mobileDisplayDrawer = document.getElementById('mobile-display-drawer');
+            const btnDecM = document.getElementById('btn-font-decrease-m');
+            const btnResetM = document.getElementById('btn-font-reset-m');
+            const btnIncM = document.getElementById('btn-font-increase-m');
+            const btnAlignM = document.getElementById('btn-align-toggle-m');
+            const btnBadgeStyleM = document.getElementById('btn-badge-style-toggle-m');
+
+            if (btnMobileDisplayToggle && mobileDisplayDrawer) {
+                btnMobileDisplayToggle.addEventListener('click', () => {
+                    mobileDisplayDrawer.classList.toggle('hidden');
+                });
+            }
+
             const fontSizes = ['sm', 'base', 'lg', 'xl'];
 
-            if (btnDec) {
-                btnDec.addEventListener('click', () => {
-                    const idx = fontSizes.indexOf(currentFontSize);
-                    if (idx > 0) {
-                        currentFontSize = fontSizes[idx - 1];
-                        applyDisplaySettings();
-                    }
-                });
-            }
-
-            if (btnReset) {
-                btnReset.addEventListener('click', () => {
-                    currentFontSize = 'base';
+            const handleDecFont = () => {
+                const idx = fontSizes.indexOf(currentFontSize);
+                if (idx > 0) {
+                    currentFontSize = fontSizes[idx - 1];
                     applyDisplaySettings();
-                });
-            }
-
-            if (btnInc) {
-                btnInc.addEventListener('click', () => {
-                    const idx = fontSizes.indexOf(currentFontSize);
-                    if (idx < fontSizes.length - 1) {
-                        currentFontSize = fontSizes[idx + 1];
-                        applyDisplaySettings();
-                    }
-                });
-            }
-
-            if (btnAlign) {
-                btnAlign.addEventListener('click', () => {
-                    currentTextAlign = (currentTextAlign === 'left') ? 'justify' : 'left';
+                }
+            };
+            const handleResetFont = () => {
+                currentFontSize = 'base';
+                applyDisplaySettings();
+            };
+            const handleIncFont = () => {
+                const idx = fontSizes.indexOf(currentFontSize);
+                if (idx < fontSizes.length - 1) {
+                    currentFontSize = fontSizes[idx + 1];
                     applyDisplaySettings();
-                });
-            }
+                }
+            };
+            const handleAlignToggle = () => {
+                currentTextAlign = (currentTextAlign === 'left') ? 'justify' : 'left';
+                applyDisplaySettings();
+            };
+            const handleBadgeToggle = () => {
+                currentBadgeStyle = (currentBadgeStyle === 'letters') ? 'numbers' : 'letters';
+                applyDisplaySettings();
+                if (currentQuizQuestions && currentQuizQuestions.length > 0) {
+                    displayQuestion(currentQuestionIndex);
+                }
+            };
+
+            if (btnDec) btnDec.addEventListener('click', handleDecFont);
+            if (btnDecM) btnDecM.addEventListener('click', handleDecFont);
+
+            if (btnReset) btnReset.addEventListener('click', handleResetFont);
+            if (btnResetM) btnResetM.addEventListener('click', handleResetFont);
+
+            if (btnInc) btnInc.addEventListener('click', handleIncFont);
+            if (btnIncM) btnIncM.addEventListener('click', handleIncFont);
+
+            if (btnAlign) btnAlign.addEventListener('click', handleAlignToggle);
+            if (btnAlignM) btnAlignM.addEventListener('click', handleAlignToggle);
 
             if (btnMobileNav) {
                 btnMobileNav.addEventListener('click', () => {
@@ -1193,22 +1364,15 @@
                         isMobileNavCollapsed = !isMobileNavCollapsed;
                         navContainer.classList.toggle('hidden', isMobileNavCollapsed);
                         const label = document.getElementById('mobile-nav-label');
-                        if (label) label.textContent = isMobileNavCollapsed ? 'Hiện DS' : 'Ẩn DS';
+                        if (label) label.textContent = isMobileNavCollapsed ? 'Hiện DS' : 'DS';
                     }
                 });
             }
 
             // Nút chuyển đổi kiểu thẻ đáp án (A,B,C,D vs 1,2,3,4)
             const btnBadgeStyle = document.getElementById('btn-badge-style-toggle');
-            if (btnBadgeStyle) {
-                btnBadgeStyle.addEventListener('click', () => {
-                    currentBadgeStyle = (currentBadgeStyle === 'letters') ? 'numbers' : 'letters';
-                    applyDisplaySettings();
-                    if (currentQuizQuestions && currentQuizQuestions.length > 0) {
-                        displayQuestion(currentQuestionIndex);
-                    }
-                });
-            }
+            if (btnBadgeStyle) btnBadgeStyle.addEventListener('click', handleBadgeToggle);
+            if (btnBadgeStyleM) btnBadgeStyleM.addEventListener('click', handleBadgeToggle);
 
             // Nút Bật/Tắt xáo trộn đáp án
             const btnShuffle = document.getElementById('btn-shuffle-toggle');
@@ -1217,8 +1381,8 @@
                     shouldShuffleOptions = !shouldShuffleOptions;
                     applyDisplaySettings();
                     alert(shouldShuffleOptions 
-                        ? "🔀 Đã BẬT xáo trộn đáp án! Vị trí các lựa chọn sẽ được hoán đổi ngẫu nhiên mỗi lần thi." 
-                        : "⏹️ Đã TẮT xáo trộn đáp án! Thứ tự đáp án A, B, C, D sẽ được giữ nguyên 100% đúng như đề bài ban đầu.");
+                        ? "Đã BẬT xáo trộn đáp án! Vị trí các lựa chọn sẽ được hoán đổi ngẫu nhiên mỗi lần thi." 
+                        : "Đã TẮT xáo trộn đáp án! Thứ tự đáp án A, B, C, D sẽ được giữ nguyên 100% đúng như đề bài ban đầu.");
                 });
             }
         }
@@ -1662,7 +1826,7 @@ function doGet(e) {
             } else if (targetIndex >= 0) {
                 actionHtml = `<button type="button" id="live-toast-view-btn" class="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold px-2 py-0.5 rounded text-white ml-1 transition-all shrink-0">Xem</button>`;
             }
-            toast.innerHTML = `<span class="text-emerald-400 font-bold text-sm shrink-0">⚡</span><span class="font-medium">${escapeHtml(msg)}</span>${actionHtml}`;
+            toast.innerHTML = `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></span><span class="font-medium">${escapeHtml(msg)}</span>${actionHtml}`;
             
             const customBtn = toast.querySelector('#live-toast-custom-btn');
             if (customBtn && actionBtn && typeof actionBtn.onClick === 'function') {
@@ -1723,7 +1887,7 @@ function doGet(e) {
         // HỆ THỐNG PHÁT HIỆN & BẢO VỆ PHIÊN BẢN WEB (VersionGuard)
         // Cấm thiết bị chạy bản cũ đồng bộ / ghi đè; Tự động xóa cache & tải lại
         // =========================================================================
-        const APP_BUILD_VERSION = 1730709000000;
+        const APP_BUILD_VERSION = 1730718000000;
 
         const VersionGuard = {
             currentBuild: APP_BUILD_VERSION,
@@ -1891,19 +2055,22 @@ function doGet(e) {
                 const count = this.getOnlineDeviceCount();
                 const labelEl = document.getElementById('peer-sync-btn-label');
                 const badgeEl = document.getElementById('peer-online-count-badge');
+                const numberEl = document.getElementById('peer-count-number');
                 
                 if (labelEl) {
-                    labelEl.textContent = count > 1 ? `Đồng bộ (${count} máy)` : 'Đồng bộ đa máy';
+                    labelEl.textContent = count > 1 ? `Đa máy (${count})` : 'Đồng bộ';
+                }
+                if (numberEl) {
+                    numberEl.textContent = count;
                 }
                 if (badgeEl) {
                     if (this.isConnected) {
-                        badgeEl.textContent = `${count} máy online`;
-                        badgeEl.className = 'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ' + 
-                            (count > 1 ? 'bg-emerald-900 text-emerald-200' : 'bg-emerald-800 text-emerald-100');
-                        badgeEl.classList.remove('hidden');
+                        badgeEl.className = 'px-1.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shrink-0 ' + 
+                            (count > 1 ? 'bg-emerald-900 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-emerald-800 text-emerald-100');
+                        badgeEl.title = `${count} thiết bị đang kết nối cùng tài khoản`;
                     } else {
-                        badgeEl.textContent = 'Chưa kết nối';
-                        badgeEl.className = 'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300';
+                        badgeEl.className = 'px-1.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shrink-0 bg-slate-800 text-slate-300';
+                        badgeEl.title = 'Chưa kết nối Live Sync';
                     }
                 }
             },
@@ -2216,10 +2383,10 @@ function doGet(e) {
 
                 if (statusBadge) {
                     if (this.isConnected) {
-                        statusBadge.textContent = `⚡ Trực tuyến (${totalOnline} máy)`;
-                        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold';
+                        statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block mr-1"></span>Trực tuyến (${totalOnline} máy)`;
+                        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold flex items-center';
                     } else if (CloudSyncManager.currentUser) {
-                        statusBadge.textContent = '⏳ Đang kết nối...';
+                        statusBadge.textContent = 'Đang kết nối...';
                         statusBadge.className = 'px-2 py-0.5 rounded text-[10px] bg-amber-500 text-white font-bold';
                     } else {
                         statusBadge.textContent = 'Chưa đăng nhập';
@@ -2736,10 +2903,12 @@ function doGet(e) {
                 // Nút hiện/ẩn mật khẩu
                 const togglePassBtn = document.getElementById('toggle-password-visibility-btn');
                 const passInput = document.getElementById('auth-input-password');
+                const eyeIconSvg = `<svg class="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+                const eyeSlashIconSvg = `<svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>`;
                 if (togglePassBtn && passInput) {
                     togglePassBtn.addEventListener('click', () => {
                         passInput.type = passInput.type === 'password' ? 'text' : 'password';
-                        togglePassBtn.textContent = passInput.type === 'password' ? '👁️' : '🔒';
+                        togglePassBtn.innerHTML = passInput.type === 'password' ? eyeIconSvg : eyeSlashIconSvg;
                     });
                 }
 
@@ -2858,32 +3027,29 @@ function doGet(e) {
                 const label = document.getElementById('sync-label');
                 if (!badge || !icon || !label) return;
 
+                const baseBadgeClass = "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm active:scale-95 shrink-0 ";
+
                 if (this.isSyncing) {
-                    icon.textContent = '🔄';
-                    icon.classList.add('animate-sync-spin');
+                    icon.innerHTML = `<svg class="w-4 h-4 animate-sync-spin text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
                     label.textContent = 'Đang đồng bộ...';
-                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all shadow-sm";
+                    badge.className = baseBadgeClass + "bg-blue-600 text-white";
                 } else if (!this.currentUser) {
-                    icon.textContent = '☁️';
-                    icon.classList.remove('animate-sync-spin');
+                    icon.innerHTML = `<svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>`;
                     label.textContent = 'Cloud Sync';
-                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600 transition-all shadow-sm";
+                    badge.className = baseBadgeClass + "bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700";
                 } else if (typeof RealtimeSync !== 'undefined' && RealtimeSync.isConnected) {
-                    icon.textContent = '⚡';
-                    icon.classList.remove('animate-sync-spin');
+                    icon.innerHTML = `<svg class="w-4 h-4 text-emerald-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`;
                     label.textContent = 'Live Sync';
-                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm";
+                    badge.className = baseBadgeClass + "bg-emerald-600 hover:bg-emerald-500 text-white";
                     badge.title = "Đồng bộ thời gian thực siêu tốc (<100ms) & Lưu vĩnh viễn trên Google Drive";
                 } else if (!GoogleDriveAPI.isConnected()) {
-                    icon.textContent = '⚠️';
-                    icon.classList.remove('animate-sync-spin');
+                    icon.innerHTML = `<svg class="w-4 h-4 text-amber-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
                     label.textContent = 'Nối Drive';
-                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-amber-950 transition-all shadow-sm";
+                    badge.className = baseBadgeClass + "bg-amber-600 text-white";
                 } else {
-                    icon.textContent = '🟢';
-                    icon.classList.remove('animate-sync-spin');
+                    icon.innerHTML = `<svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
                     label.textContent = 'Đã đồng bộ';
-                    badge.className = "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 hover:bg-emerald-600 text-emerald-100 transition-all shadow-sm";
+                    badge.className = baseBadgeClass + "bg-emerald-700 hover:bg-emerald-600 text-emerald-100";
                 }
             },
 
@@ -4091,18 +4257,28 @@ function doGet(e) {
                             if (isSelected) {
                                 titleHtml = `<div class="flex items-center justify-between font-bold text-emerald-800 text-xs md:text-sm border-b border-emerald-200/80 pb-2 mb-2.5">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-emerald-600 text-base">✅</span>
+                                        <span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        </span>
                                         <span>Chính xác! Đáp án đúng: <strong class="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-bold">[${currentBadge}]</strong> <span class="text-slate-900">${escapeHtml(question.correctAnswer)}</span></span>
                                     </div>
-                                    <span class="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full shrink-0">💡 Giải thích chi tiết</span>
+                                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full shrink-0 border border-emerald-200 shadow-xs">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.477.859h4z"></path></svg>
+                                        <span>Giải thích chi tiết</span>
+                                    </span>
                                 </div>`;
                             } else {
                                 titleHtml = `<div class="flex items-center justify-between font-bold text-emerald-800 text-xs md:text-sm border-b border-emerald-200/80 pb-2 mb-2.5">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-emerald-600 text-base">👉</span>
+                                        <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
                                         <span>Đáp án đúng là: <strong class="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-bold">[${currentBadge}]</strong> <span class="text-slate-900">${escapeHtml(question.correctAnswer)}</span></span>
                                     </div>
-                                    <span class="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full shrink-0">💡 Giải thích chi tiết</span>
+                                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full shrink-0 border border-emerald-200 shadow-xs">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.477.859h4z"></path></svg>
+                                        <span>Giải thích chi tiết</span>
+                                    </span>
                                 </div>`;
                             }
 
@@ -4124,8 +4300,11 @@ function doGet(e) {
                             if (specificExplForWrong) {
                                 const wrongExplDiv = document.createElement('div');
                                 wrongExplDiv.classList.add('explanation-box-wrong');
-                                wrongExplDiv.innerHTML = `<div class="flex items-center gap-1.5 font-bold text-red-800 text-xs md:text-sm border-b border-red-200/80 pb-1.5 mb-2">
-                                    <span>❌ Vì sao đáp án bạn chọn chưa đúng:</span>
+                                wrongExplDiv.innerHTML = `<div class="flex items-center gap-2 font-bold text-red-800 text-xs md:text-sm border-b border-red-200/80 pb-2 mb-2">
+                                    <span class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </span>
+                                    <span>Vì sao đáp án bạn chọn chưa đúng:</span>
                                 </div><div class="rich-text-wrapper space-y-1">${renderRichText(specificExplForWrong, false)}</div>`;
                                 optionButton.appendChild(wrongExplDiv);
                             }
@@ -4201,11 +4380,11 @@ function doGet(e) {
 
             if (flaggedQuestions.has(currentQuestionId)) {
                 flagQuestionBtn.classList.add('bg-red-500', 'text-white');
-                flagQuestionBtn.classList.remove('bg-yellow-400', 'text-yellow-900');
+                flagQuestionBtn.classList.remove('bg-amber-400', 'text-amber-950', 'bg-yellow-400', 'text-yellow-900');
                 if(spanInsideButton) spanInsideButton.textContent = 'Bỏ cờ';
             } else {
                 flagQuestionBtn.classList.remove('bg-red-500', 'text-white');
-                flagQuestionBtn.classList.add('bg-yellow-400', 'text-yellow-900');
+                flagQuestionBtn.classList.add('bg-amber-400', 'text-amber-950');
                 if(spanInsideButton) spanInsideButton.textContent = 'Cắm cờ';
             }
         }
@@ -4460,8 +4639,8 @@ function doGet(e) {
                         answersDiv.classList.add('text-sm', 'mt-1', 'space-y-1');
 
                         answersDiv.innerHTML = `
-                            <div class="text-red-600 bg-red-50 p-1.5 rounded">❌ Bạn chọn: <span class="font-medium text-black">${escapeHtml(detail.userAnswer)}</span></div>
-                            <div class="text-green-700 bg-green-50 p-1.5 rounded">✅ Đáp án đúng: <span class="font-medium text-black">${escapeHtml(detail.correctAnswer)}</span></div>
+                            <div class="text-red-600 bg-red-50 p-2 rounded-lg flex items-center gap-1.5"><span class="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></span><span>Bạn chọn: <strong class="text-slate-800">${escapeHtml(detail.userAnswer)}</strong></span></div>
+                            <div class="text-emerald-700 bg-emerald-50 p-2 rounded-lg flex items-center gap-1.5"><span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span><span>Đáp án đúng: <strong class="text-slate-800">${escapeHtml(detail.correctAnswer)}</strong></span></div>
                         `;
 
                         li.appendChild(linkContainer);
@@ -4772,10 +4951,10 @@ Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra b�
         if (copyAiPromptBtn) {
             copyAiPromptBtn.addEventListener('click', () => {
                 function onCopySuccess() {
-                    if (copyAiPromptText) copyAiPromptText.textContent = '✅ Đã sao chép Prompt!';
+                    if (copyAiPromptText) copyAiPromptText.textContent = 'Đã sao chép Prompt!';
                     if (copyPromptToast) copyPromptToast.classList.remove('hidden');
                     setTimeout(() => {
-                        if (copyAiPromptText) copyAiPromptText.textContent = '🤖 Sao chép Prompt gửi AI';
+                        if (copyAiPromptText) copyAiPromptText.textContent = 'Sao chép Prompt gửi AI';
                     }, 3500);
                 }
 
@@ -4843,7 +5022,7 @@ Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra b�
                     modalPreviewContent.innerHTML = '<p class="text-amber-600 bg-amber-50 p-3 rounded border border-amber-200">Không nhận diện được câu hỏi. Hãy đảm bảo câu bắt đầu bằng <strong>Câu 1:</strong> hoặc <strong>Question 1:</strong> và có các đáp án <strong>A.</strong>, <strong>B.</strong>...</p>';
                     return;
                 }
-                let previewHtml = `<div class="mb-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded border border-emerald-200">✅ Đã biên dịch thành công ${parsed.length} câu hỏi. Xem trước câu đầu tiên dưới đây:</div>`;
+                let previewHtml = `<div class="mb-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span>Đã biên dịch thành công ${parsed.length} câu hỏi. Xem trước câu đầu tiên:</span></div>`;
                 const q = parsed[0];
                 previewHtml += `<div class="p-4 bg-white rounded-lg border border-gray-200 shadow-sm space-y-3">
                     <div class="font-bold text-slate-800">${renderRichText(q.question, true)}</div>
@@ -4861,7 +5040,7 @@ Bây giờ, hãy tạo câu hỏi theo đúng chủ đề trên và xuất ra b�
                 previewHtml += `</div>`;
                 if (q.explanation) {
                     previewHtml += `<div class="mt-3 p-3 bg-white border border-emerald-300 rounded-lg shadow-sm">
-                        <div class="font-bold text-xs text-emerald-800 border-b border-emerald-200 pb-1 mb-2">💡 Giải thích biên dịch:</div>
+                        <div class="font-bold text-xs text-emerald-800 border-b border-emerald-200 pb-1 mb-2 flex items-center gap-1"><svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.477.859h4z"></path></svg><span>Giải thích biên dịch:</span></div>
                         <div class="rich-text-wrapper space-y-1">${renderRichText(q.explanation, false)}</div>
                     </div>`;
                 }
@@ -5235,7 +5414,7 @@ Giải thích:
         if (quickPeerSyncBtn && peerSyncModal) {
             quickPeerSyncBtn.addEventListener('click', () => {
                 if (!CloudSyncManager.currentUser) {
-                    alert("Vui lòng mở mục 'Cloud Sync' (nút ☁️ bên cạnh) để đăng nhập cùng 1 tài khoản và mật khẩu trên các thiết bị trước.");
+                    alert("Vui lòng mở mục 'Cloud Sync' (nút Cloud trên thanh điều hướng) để đăng nhập cùng 1 tài khoản và mật khẩu trên các thiết bị trước.");
                     const cloudModal = document.getElementById('cloud-sync-modal');
                     if (cloudModal) cloudModal.classList.remove('hidden');
                     return;
